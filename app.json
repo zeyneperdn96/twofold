@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Us & Where",
+    "slug": "us-and-where",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "usandwhere",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.zeynstudio.usandwhere"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FAFAF7"
+      },
+      "package": "com.zeynstudio.usandwhere"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ]
+  }
+}

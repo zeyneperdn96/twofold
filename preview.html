@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#F7F6F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TwoFold">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>TwoFold</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+  :root{
+    --bg:#F7F6F2;
+    --card:#FFFFFF;
+    --dark:#2D2D2D;
+    --muted:#A0A0A0;
+    --accent:#5BBFAD;
+    --accent-light:#E4F5F1;
+    --accent-dark:#3D9E8E;
+    --white:#FFFFFF;
+    --border:#EEECEA;
+    --warm:#F0EDE8;
+    --danger:#E85D5D;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+
+  body{
+    font-family:'Nunito',-apple-system,sans-serif;
+    background:var(--bg);color:var(--dark);
+    max-width:430px;margin:0 auto;
+    min-height:100vh;position:relative;overflow-x:hidden;
+  }
+
+  /* ===== SPLASH ===== */
+  .splash{
+    position:fixed;inset:0;z-index:9999;
+    background:var(--accent);
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    max-width:430px;margin:0 auto;
+    transition:opacity .6s ease,visibility .6s ease;
+  }
+  .splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+  .splash-logo{
+    width:220px;height:220px;
+    animation:splashBounce .6s ease;
+  }
+  .splash-logo img{width:100%;height:100%;object-fit:contain}
+  .splash-name{
+    font-size:22px;font-weight:800;color:white;margin-top:14px;
+    opacity:0;animation:fadeUp .5s .2s ease forwards;
+  }
+  .splash-sub{
+    font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;
+    opacity:0;animation:fadeUp .5s .35s ease forwards;
+  }
+  @keyframes splashBounce{0%{transform:scale(0) rotate(-10deg)}60%{transform:scale(1.1) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ===== SCREENS ===== */
+  .screen{display:none;min-height:100vh}
+  .screen.active{display:block}
+  .screen.slide-in-left{display:block;animation:slideInL .3s ease forwards}
+  .screen.slide-out-left{display:block;animation:slideOutL .3s ease forwards}
+  .screen.slide-in-right{display:block;animation:slideInR .3s ease forwards}
+  .screen.slide-out-right{display:block;animation:slideOutR .3s ease forwards}
+  @keyframes slideInL{from{transform:translateX(100%);opacity:.8}to{transform:translateX(0);opacity:1}}
+  @keyframes slideOutL{from{transform:translateX(0);opacity:1}to{transform:translateX(-30%);opacity:0}}
+  @keyframes slideInR{from{transform:translateX(-30%);opacity:.8}to{transform:translateX(0);opacity:1}}
+  @keyframes slideOutR{from{transform:translateX(0);opacity:1}to{transform:translateX(100%);opacity:0}}
+
+  /* ===== HOME SCREEN ===== */
+  .home-screen{padding-bottom:100px}
+  .home-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:calc(16px + var(--safe-top)) 20px 12px;
+  }
+  .home-header h1{font-size:24px;font-weight:800}
+  .add-trip-btn{
+    width:40px;height:40px;border-radius:50%;
+    background:var(--accent);color:white;
+    border:none;font-size:22px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 10px rgba(91,191,173,.35);
+    transition:transform .15s;
+  }
+  .add-trip-btn:active{transform:scale(.9)}
+
+  .trip-list{padding:0 20px}
+  .trip-card{
+    background:var(--card);border-radius:20px;
+    padding:16px;margin-bottom:12px;position:relative;
+    box-shadow:0 2px 8px rgba(0,0,0,.04);
+    display:flex;align-items:center;gap:0;
+    transition:transform .15s;
+  }
+  .trip-card:active{transform:scale(.97)}
+  .trip-card-inner{display:flex;align-items:center;gap:14px;flex:1;min-width:0;cursor:pointer}
+  .trip-card-delete{
+    width:32px;height:32px;border:none;background:none;
+    color:var(--muted);font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;transition:background .15s,color .15s;flex-shrink:0;
+  }
+  .trip-card-delete:active{background:rgba(232,93,93,.1);color:var(--danger)}
+  .trip-card-circle{
+    width:56px;height:56px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent-light),#d4ede8);
+  }
+  .trip-card-info{flex:1;min-width:0}
+  .trip-card-name{font-size:15px;font-weight:700}
+  .trip-card-date{font-size:12px;color:var(--muted);margin-top:2px}
+  .trip-card-badge{
+    background:var(--accent-light);color:var(--accent-dark);
+    font-size:11px;font-weight:700;padding:4px 10px;
+    border-radius:20px;white-space:nowrap;flex-shrink:0;
+  }
+  .trip-card-badge.past{background:var(--warm);color:var(--muted)}
+
+  .empty-state{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:80px 24px;text-align:center;
+  }
+  .empty-state .e-icon{
+    font-size:48px;margin-bottom:16px;
+    animation:bounce 2s ease-in-out infinite;
+  }
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .empty-state p{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:22px}
+  .btn-accent{
+    background:var(--accent);color:white;
+    border:none;border-radius:14px;
+    padding:14px 28px;font-size:14px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+    box-shadow:0 2px 10px rgba(91,191,173,.3);
+    transition:transform .15s;
+  }
+  .btn-accent:active{transform:scale(.96)}
+
+  /* ===== TRIP DETAIL ===== */
+  .trip-detail{padding-bottom:calc(90px + var(--safe-bottom))}
+
+  /* Greeting header */
+  .greet-header{
+    padding:calc(16px + var(--safe-top)) 20px 0;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .greet-text{font-size:16px;font-weight:700}
+  .greet-text span{color:var(--accent)}
+  .greet-back{
+    width:36px;height:36px;border-radius:50%;
+    background:var(--warm);border:none;color:var(--dark);
+    font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s;
+  }
+  .greet-back:active{background:var(--border)}
+
+  /* Hero circle */
+  .hero-circle-wrap{
+    display:flex;justify-content:center;padding:20px 0 8px;
+  }
+  .hero-circle{
+    width:180px;height:180px;border-radius:50%;
+    background:linear-gradient(135deg,#d4ede8,var(--accent-light),#faf3e8);
+    display:flex;align-items:center;justify-content:center;
+    font-size:72px;
+    box-shadow:0 4px 24px rgba(91,191,173,.2);
+    position:relative;
+  }
+  .hero-circle .trip-name-overlay{
+    position:absolute;bottom:-8px;
+    background:var(--card);border-radius:20px;
+    padding:6px 16px;font-size:13px;font-weight:700;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+    white-space:nowrap;
+  }
+
+  /* Pill buttons */
+  .pill-row{
+    display:flex;gap:10px;padding:20px 20px 0;
+    justify-content:center;
+  }
+  .pill-btn{
+    display:flex;align-items:center;gap:6px;
+    background:var(--card);border-radius:24px;
+    padding:10px 18px;border:none;cursor:pointer;
+    font-family:inherit;font-size:13px;font-weight:600;
+    box-shadow:0 1px 6px rgba(0,0,0,.05);
+    transition:transform .15s,box-shadow .15s;
+    color:var(--dark);
+  }
+  .pill-btn:active{transform:scale(.95);box-shadow:0 0 0 rgba(0,0,0,0)}
+  .pill-btn .p-icon{font-size:16px}
+  .pill-btn.accent{background:var(--accent);color:white;box-shadow:0 2px 10px rgba(91,191,173,.3)}
+
+  /* Countdown badge */
+  .countdown-strip{
+    text-align:center;padding:16px 20px 0;
+  }
+  .countdown-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--accent-light);color:var(--accent-dark);
+    font-size:13px;font-weight:700;padding:8px 18px;border-radius:24px;
+  }
+
+  /* Section */
+  .section{padding:20px 20px 0}
+  .section-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .section-title{font-size:16px;font-weight:700}
+  .section-link{
+    font-size:12px;font-weight:600;color:var(--accent);
+    background:none;border:none;cursor:pointer;font-family:inherit;
+  }
+
+  /* Location card (with photo placeholder) */
+  .loc-card{
+    display:flex;align-items:center;gap:12px;
+    background:var(--card);border-radius:16px;
+    padding:12px;margin-bottom:8px;
+    box-shadow:0 1px 4px rgba(0,0,0,.03);
+    transition:transform .15s;
+  }
+  .loc-card:active{transform:scale(.98)}
+  .loc-thumb{
+    width:48px;height:48px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;flex-shrink:0;
+  }
+  .loc-thumb.landmark{background:linear-gradient(135deg,#fce4ec,#f8bbd0)}
+  .loc-thumb.restaurant{background:linear-gradient(135deg,#fff3e0,#ffe0b2)}
+  .loc-thumb.cafe{background:linear-gradient(135deg,#efebe9,#d7ccc8)}
+  .loc-thumb.museum{background:linear-gradient(135deg,#e8eaf6,#c5cae9)}
+  .loc-thumb.shop{background:linear-gradient(135deg,#f3e5f5,#ce93d8)}
+  .loc-thumb.ticket{background:linear-gradient(135deg,#e0f7fa,#80deea)}
+  .loc-thumb.default{background:linear-gradient(135deg,var(--accent-light),#d4ede8)}
+  .loc-info{flex:1;min-width:0}
+  .loc-title{font-size:14px;font-weight:600}
+  .loc-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .loc-avatar{
+    width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;flex-shrink:0;
+  }
+  .loc-avatar.z{background:#E8DFD0;color:#A08B6A}
+  .loc-avatar.b{background:#D4DEE8;color:#5B8FC9}
+  .loc-time{
+    font-size:12px;font-weight:600;color:var(--muted);
+    background:var(--warm);padding:3px 8px;border-radius:8px;
+    margin-right:8px;flex-shrink:0;
+  }
+
+  /* ===== MONEY TALK ===== */
+  .money-header{
+    background:var(--card);border-radius:20px;
+    padding:20px;margin-bottom:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.04);
+  }
+  .money-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .money-total{font-size:28px;font-weight:800}
+  .money-total .currency{font-size:16px;font-weight:600;color:var(--muted)}
+  .money-people{display:flex;gap:12px;margin-top:16px}
+  .money-person{flex:1}
+  .money-person-name{
+    display:flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;
+  }
+  .money-person-amt{font-size:15px;font-weight:700}
+  .money-bar{height:5px;background:var(--border);border-radius:3px;margin-top:6px;overflow:hidden}
+  .money-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+  .money-bar-fill.z{background:var(--accent)}
+  .money-bar-fill.b{background:#6BB5E0}
+
+  .expense-card{
+    display:flex;align-items:center;gap:12px;
+    background:var(--card);border-radius:16px;
+    padding:12px 14px;margin-bottom:8px;
+    box-shadow:0 1px 4px rgba(0,0,0,.03);
+  }
+  .expense-icon{
+    width:40px;height:40px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;background:var(--warm);flex-shrink:0;
+  }
+  .expense-info{flex:1;min-width:0}
+  .expense-title{font-size:14px;font-weight:600}
+  .expense-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .expense-amt{font-size:14px;font-weight:700;white-space:nowrap}
+
+  /* ===== MOMENT CARD ===== */
+  .moment-card{
+    background:var(--card);border-radius:16px;
+    padding:16px;margin-bottom:10px;position:relative;
+    border-left:4px solid var(--muted);
+    box-shadow:0 1px 4px rgba(0,0,0,.03);
+  }
+  .moment-delete{
+    position:absolute;top:10px;right:10px;
+    width:24px;height:24px;border:none;background:none;
+    color:var(--muted);font-size:12px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;opacity:.5;transition:opacity .15s,background .15s;
+  }
+  .moment-delete:active{opacity:1;background:rgba(232,93,93,.1);color:var(--danger)}
+  .moment-card.m-happy{border-left-color:#66BB6A;background:linear-gradient(135deg,#f4faf4,#fff)}
+  .moment-card.m-love{border-left-color:#EC407A;background:linear-gradient(135deg,#fdf2f6,#fff)}
+  .moment-card.m-cool{border-left-color:#42A5F5;background:linear-gradient(135deg,#f2f7fd,#fff)}
+  .moment-card.m-star{border-left-color:#FFA726;background:linear-gradient(135deg,#fdf7f2,#fff)}
+  .moment-card.m-calm{border-left-color:#AB47BC;background:linear-gradient(135deg,#f7f2fd,#fff)}
+  .moment-card .m-mood{font-size:24px;margin-bottom:6px}
+  .moment-card .m-note{font-size:14px;line-height:20px;color:#444}
+  .moment-card .m-footer{
+    display:flex;align-items:center;justify-content:flex-end;
+    gap:6px;margin-top:10px;
+  }
+  .moment-card .m-time{font-size:11px;color:var(--muted)}
+
+  /* ===== PACKING LIST ===== */
+  .pack-item{
+    display:flex;align-items:center;gap:12px;
+    background:var(--card);border-radius:14px;
+    padding:12px 14px;margin-bottom:6px;
+    box-shadow:0 1px 3px rgba(0,0,0,.03);
+    transition:opacity .2s;
+  }
+  .pack-check{
+    width:24px;height:24px;border-radius:8px;
+    border:2px solid var(--border);background:none;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:14px;color:transparent;
+    transition:all .15s;flex-shrink:0;
+  }
+  .pack-check.checked{
+    background:var(--accent);border-color:var(--accent);color:white;
+  }
+  .pack-item.done{opacity:.45}
+  .pack-item.done .pack-text{text-decoration:line-through}
+  .pack-text{font-size:14px;font-weight:500;flex:1}
+  .pack-delete{
+    background:none;border:none;font-size:16px;color:var(--muted);
+    cursor:pointer;padding:4px;
+  }
+
+  /* ===== TAB BAR ===== */
+  .tab-bar{
+    position:fixed;bottom:0;
+    left:50%;transform:translateX(-50%);
+    width:100%;max-width:430px;
+    background:var(--card);
+    border-top:1px solid var(--border);
+    z-index:20;
+    padding-bottom:var(--safe-bottom);
+    box-shadow:0 -2px 10px rgba(0,0,0,.04);
+  }
+  .tab-bar-inner{display:flex;position:relative}
+  .tab{
+    flex:1;display:flex;flex-direction:column;
+    align-items:center;padding:8px 0 6px;
+    cursor:pointer;border:none;background:none;
+    color:var(--muted);font-size:10px;font-weight:600;
+    font-family:inherit;gap:2px;transition:color .2s;
+  }
+  .tab.active{color:var(--accent)}
+  .tab .t-icon{font-size:20px}
+  .tab-dot{
+    width:4px;height:4px;border-radius:50%;
+    background:var(--accent);opacity:0;transition:opacity .2s;
+    margin-top:1px;
+  }
+  .tab.active .tab-dot{opacity:1}
+
+  /* ===== FAB ===== */
+  .fab{
+    position:fixed;right:calc(50% - 195px);
+    bottom:calc(68px + var(--safe-bottom));
+    width:52px;height:52px;border-radius:50%;
+    background:var(--accent);color:white;border:none;
+    font-size:26px;cursor:pointer;
+    box-shadow:0 4px 16px rgba(91,191,173,.4);
+    display:flex;align-items:center;justify-content:center;
+    z-index:15;transition:transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .fab:active{transform:scale(.88)}
+  .fab .fab-icon{
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:300;font-size:28px;
+  }
+  .fab.sheet-open .fab-icon{transform:rotate(45deg)}
+
+  /* ===== BOTTOM SHEET ===== */
+  .sheet-overlay{
+    position:fixed;inset:0;z-index:100;
+    display:flex;align-items:flex-end;
+    visibility:hidden;pointer-events:none;
+  }
+  .sheet-overlay.open{visibility:visible;pointer-events:auto}
+  .sheet-backdrop{
+    position:absolute;inset:0;
+    background:rgba(0,0,0,0);transition:background .3s;
+  }
+  .sheet-overlay.open .sheet-backdrop{background:rgba(0,0,0,.35)}
+  .sheet{
+    position:relative;background:var(--white);
+    border-radius:24px 24px 0 0;
+    padding:20px;padding-bottom:calc(20px + var(--safe-bottom));
+    max-height:85%;overflow-y:auto;z-index:1;width:100%;
+    transform:translateY(100%);
+    transition:transform .35s cubic-bezier(.32,.72,0,1);
+  }
+  .sheet-overlay.open .sheet{transform:translateY(0)}
+  .sheet .handle{width:36px;height:4px;background:#D1D1D6;border-radius:2px;margin:0 auto 16px}
+  .sheet-title{font-size:17px;font-weight:700;margin-bottom:16px}
+
+  /* ===== FORM ===== */
+  .input{
+    width:100%;font-family:inherit;font-size:14px;
+    color:var(--dark);background:var(--warm);
+    border:none;border-radius:14px;
+    padding:14px;margin-bottom:10px;outline:none;
+    transition:box-shadow .2s;
+  }
+  .input:focus{box-shadow:0 0 0 2px var(--accent-light)}
+  .input::placeholder{color:var(--muted)}
+  .row{display:flex;gap:8px}
+  .row .input{flex:1}
+  .emoji-row,.chip-row,.mood-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .emoji-option,.mood-option{
+    width:40px;height:40px;border-radius:12px;
+    background:var(--warm);border:2px solid transparent;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;cursor:pointer;transition:transform .15s,border-color .15s;
+  }
+  .mood-option{width:48px;height:48px;border-radius:50%;font-size:24px}
+  .emoji-option:active,.mood-option:active{transform:scale(.88)}
+  .emoji-option.selected,.mood-option.selected{
+    background:var(--accent-light);border-color:var(--accent);transform:scale(1.08);
+  }
+  .chip{
+    padding:8px 12px;border-radius:10px;
+    background:var(--warm);border:1.5px solid transparent;
+    font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;
+    transition:transform .15s,background .15s;
+  }
+  .chip:active{transform:scale(.94)}
+  .chip.active{background:var(--accent-light);border-color:var(--accent)}
+  .toggle-row{display:flex;gap:8px;margin-bottom:14px}
+  .toggle{
+    flex:1;padding:10px;border-radius:12px;
+    background:var(--warm);border:none;
+    font-family:inherit;font-size:14px;font-weight:600;
+    cursor:pointer;text-align:center;transition:transform .15s,background .15s,color .15s;
+  }
+  .toggle:active{transform:scale(.95)}
+  .toggle.active{background:var(--accent);color:white}
+  .form-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px}
+  .btn-full{
+    width:100%;padding:16px;border-radius:16px;
+    background:var(--accent);color:white;
+    border:none;font-size:15px;font-weight:700;
+    cursor:pointer;margin-top:4px;font-family:inherit;
+    box-shadow:0 2px 10px rgba(91,191,173,.3);
+    transition:transform .15s;
+  }
+  .btn-full:active{transform:scale(.97)}
+  textarea.input{min-height:100px;resize:none}
+  .char-count{font-size:12px;color:var(--muted);text-align:right;margin:-6px 0 10px}
+  .currency-row{display:flex;gap:4px;flex-wrap:wrap;width:120px}
+  .currency-btn{
+    padding:8px 10px;border-radius:10px;
+    background:var(--warm);border:none;
+    font-size:12px;font-weight:600;cursor:pointer;
+    font-family:inherit;transition:transform .15s;
+  }
+  .currency-btn:active{transform:scale(.92)}
+  .currency-btn.active{background:var(--accent);color:white}
+
+  /* Swipe */
+  .swipe-wrap{position:relative;overflow:hidden;border-radius:16px;margin-bottom:8px}
+  .swipe-bg{
+    position:absolute;right:0;top:0;bottom:0;
+    background:var(--danger);width:80px;
+    display:flex;align-items:center;justify-content:center;
+    color:white;font-size:12px;font-weight:700;
+    border-radius:0 16px 16px 0;
+  }
+  .swipe-fg{position:relative;z-index:1;transition:transform .2s;background:var(--card);border-radius:16px}
+  .swipe-fg.swiping{transition:none}
+  .swipe-fg.removing{transition:transform .3s,opacity .3s;transform:translateX(-100%)!important;opacity:0}
+
+  /* Section header */
+  .sec-header{
+    font-size:11px;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.5px;padding:14px 0 6px;
+  }
+
+  /* Slide in */
+  .si{animation:si .3s ease-out both}
+  @keyframes si{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  /* ===== PROFILE INDICATOR ===== */
+  .profile-indicator{
+    width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;
+    border:2px solid var(--accent);
+    overflow:hidden;
+  }
+  .profile-indicator img{width:100%;height:100%;object-fit:cover;object-position:top;border-radius:50%}
+
+  /* ===== PROFILE SELECT ===== */
+  .profile-select {
+    position:fixed;inset:0;z-index:9998;
+    background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    max-width:430px;margin:0 auto;padding:40px 24px;
+    transition:opacity .5s ease,visibility .5s ease;
+  }
+  .profile-select.hide{opacity:0;visibility:hidden;pointer-events:none}
+  .profile-select-logo{margin-bottom:12px}
+  .profile-select-logo img{width:200px;height:200px;object-fit:contain}
+  .profile-select-title{font-size:14px;color:var(--muted);font-weight:600;margin-bottom:28px}
+  .profile-card {
+    width:100%;background:var(--card);border-radius:20px;
+    padding:20px;margin-bottom:12px;cursor:pointer;
+    display:flex;align-items:center;gap:16px;
+    box-shadow:0 2px 12px rgba(0,0,0,.06);
+    transition:transform .2s,box-shadow .2s,border-color .2s;
+    border:2px solid transparent;
+  }
+  .profile-card:active{transform:scale(.97)}
+  .profile-card-avatar{width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0}
+  .profile-card-avatar img{width:100%;height:100%;object-fit:cover;object-position:top}
+  .profile-card-info{flex:1}
+  .profile-card-name{font-size:17px;font-weight:700}
+  .profile-card-sub{font-size:13px;color:var(--muted);margin-top:2px}
+  .profile-card-arrow{font-size:18px;color:var(--muted)}
+  .profile-card.selected{border-color:var(--accent);background:var(--accent-light)}
+
+  /* ===== CONFIRM DIALOG ===== */
+  .confirm-overlay{
+    position:fixed;inset:0;z-index:9990;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0);
+    visibility:hidden;pointer-events:none;
+    transition:background .25s,visibility .25s;
+  }
+  .confirm-overlay.open{visibility:visible;pointer-events:auto;background:rgba(0,0,0,.4)}
+  .confirm-box{
+    background:var(--white);border-radius:20px;
+    padding:24px;width:calc(100% - 48px);max-width:320px;
+    text-align:center;
+    transform:scale(.9);opacity:0;
+    transition:transform .25s cubic-bezier(.32,.72,0,1),opacity .2s;
+  }
+  .confirm-overlay.open .confirm-box{transform:scale(1);opacity:1}
+  .confirm-icon{font-size:36px;margin-bottom:8px}
+  .confirm-title{font-size:16px;font-weight:700;margin-bottom:4px}
+  .confirm-msg{font-size:13px;color:var(--muted);margin-bottom:20px}
+  .confirm-actions{display:flex;gap:10px}
+  .confirm-actions button{
+    flex:1;padding:12px;border:none;border-radius:14px;
+    font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
+    transition:transform .15s;
+  }
+  .confirm-actions button:active{transform:scale(.96)}
+  .confirm-cancel{background:var(--warm);color:var(--dark)}
+  .confirm-delete{background:var(--danger);color:white}
+
+  /* ===== HERO TOGETHER ===== */
+  .hero-together{
+    width:180px;height:180px;border-radius:50%;overflow:hidden;
+    box-shadow:0 4px 24px rgba(91,191,173,.2);
+    border:3px solid var(--accent-light);
+  }
+  .hero-together img{width:100%;height:100%;object-fit:cover}
+
+  /* ===== DISCOVER (Swipe) ===== */
+  .discover-container{padding:20px;position:relative;min-height:400px}
+  .card-stack{position:relative;height:380px}
+  .swipe-card{
+    position:absolute;width:100%;border-radius:20px;
+    background:var(--card);box-shadow:0 4px 20px rgba(0,0,0,.1);
+    padding:24px;transition:transform 0.3s,opacity 0.3s;
+    touch-action:none;user-select:none;
+  }
+  .swipe-card:nth-child(2){transform:scale(0.95) translateY(10px);opacity:0.7;pointer-events:none}
+  .swipe-card .card-emoji{font-size:48px;text-align:center;margin-bottom:12px}
+  .swipe-card .card-title{font-size:18px;font-weight:700;text-align:center}
+  .swipe-card .card-cat{font-size:12px;color:var(--muted);text-align:center;margin-top:4px;text-transform:capitalize}
+  .swipe-card .card-desc{font-size:14px;color:#666;text-align:center;margin-top:12px;line-height:1.5}
+  .swipe-card .vote-overlay{
+    position:absolute;inset:0;border-radius:20px;opacity:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:48px;font-weight:800;pointer-events:none;transition:opacity .15s;
+  }
+  .swipe-card .vote-overlay.like{background:rgba(91,191,173,0.2)}
+  .swipe-card .vote-overlay.nope{background:rgba(232,93,93,0.2)}
+  .discover-actions{display:flex;justify-content:center;gap:24px;padding-top:20px}
+  .discover-btn{
+    width:56px;height:56px;border-radius:50%;border:none;
+    font-size:24px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.1);
+    transition:transform .15s;
+  }
+  .discover-btn:active{transform:scale(.88)}
+  .discover-btn.nope{background:white;color:var(--danger)}
+  .discover-btn.like{background:var(--accent);color:white}
+  .waiting-badge{text-align:center;margin-top:12px;font-size:12px;color:var(--muted)}
+
+  /* ===== MATCH OVERLAY ===== */
+  .match-overlay{
+    position:fixed;inset:0;z-index:9998;
+    background:rgba(0,0,0,0.6);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;transition:all 0.3s;
+    max-width:430px;margin:0 auto;
+  }
+  .match-overlay.show{opacity:1;visibility:visible}
+  .match-content{text-align:center;color:white;animation:matchBounce 0.5s ease}
+  .match-title{font-size:32px;font-weight:800}
+  .match-emoji{font-size:64px;margin-bottom:12px}
+  .match-place{font-size:18px;margin-top:8px;opacity:0.9}
+  .match-sub{font-size:14px;margin-top:4px;opacity:0.7}
+  @keyframes matchBounce{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+
+  /* ===== MAP TOGGLE ===== */
+  .map-toggle{
+    display:flex;gap:0;background:var(--warm);border-radius:12px;
+    padding:3px;margin:12px 20px 0;
+  }
+  .map-toggle-btn{
+    flex:1;padding:8px;border-radius:10px;border:none;
+    background:transparent;font-family:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;transition:all .2s;color:var(--muted);
+  }
+  .map-toggle-btn.active{background:var(--card);color:var(--dark);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  #leaflet-map{border-radius:16px;margin:12px 20px 0;z-index:1}
+  .emoji-marker{background:none!important;border:none!important;font-size:24px;text-align:center;line-height:1}
+
+  /* ===== WEATHER WIDGET ===== */
+  .weather-widget{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--card);border-radius:16px;
+    padding:10px 18px;margin-top:12px;
+    box-shadow:0 1px 6px rgba(0,0,0,.04);
+  }
+  .weather-icon{font-size:24px}
+  .weather-temp{font-size:18px;font-weight:700}
+  .weather-desc{font-size:12px;color:var(--muted)}
+  .weather-hl{font-size:11px;color:var(--muted);margin-left:4px}
+
+  /* ===== VIBEMAP SUB SECTIONS ===== */
+  .vibemap-sub-toggle{
+    display:flex;gap:0;background:var(--warm);border-radius:10px;
+    padding:2px;margin:8px 20px 0;
+  }
+  .vibemap-sub-btn{
+    flex:1;padding:7px;border-radius:8px;border:none;
+    background:transparent;font-family:inherit;font-size:12px;font-weight:600;
+    cursor:pointer;transition:all .2s;color:var(--muted);
+  }
+  .vibemap-sub-btn.active{background:var(--card);color:var(--dark);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-logo"><img src="assets/logo.png" alt="TwoFold"></div>
+  <div class="splash-name">TwoFold</div>
+  <div class="splash-sub">plan together, travel together</div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay" onclick="confirmCancel()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div class="confirm-icon" id="confirm-icon"></div>
+    <div class="confirm-title" id="confirm-title"></div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="confirmCancel()">Vazgeç</button>
+      <button class="confirm-delete" id="confirm-btn" onclick="confirmOk()">Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SELECT -->
+<div class="profile-select" id="profile-select">
+  <div class="profile-select-logo"><img src="assets/logo.png" alt="TwoFold"></div>
+  <div class="profile-select-title">Kim giriyor?</div>
+  <div id="profile-cards"></div>
+</div>
+
+<!-- ===== HOME ===== -->
+<div id="home-screen" class="screen home-screen">
+  <div class="home-header">
+    <h1>TwoFold ✈️</h1>
+    <button class="add-trip-btn" onclick="openSheet('new-trip-sheet')">+</button>
+  </div>
+  <div class="trip-list" id="trip-list"></div>
+  <div id="home-empty" class="empty-state" style="display:none">
+    <div class="e-icon">🗺</div>
+    <p>Henüz bir seyahat yok.<br>İlk maceranızı oluşturun!</p>
+    <button class="btn-accent" onclick="openSheet('new-trip-sheet')">Yeni Seyahat</button>
+  </div>
+</div>
+
+<!-- ===== TRIP DETAIL ===== -->
+<div id="trip-screen" class="screen">
+  <div class="trip-detail" id="trip-detail"></div>
+
+  <button class="fab" id="trip-fab" onclick="onFabClick()">
+    <span class="fab-icon">+</span>
+  </button>
+
+  <div class="tab-bar">
+    <div class="tab-bar-inner">
+      <button class="tab active" data-tab="home-tab" onclick="switchTab('home-tab')">
+        <span class="t-icon">🏠</span>Home<div class="tab-dot"></div>
+      </button>
+      <button class="tab" data-tab="discover" onclick="switchTab('discover')">
+        <span class="t-icon">🔥</span>Keşfet<div class="tab-dot"></div>
+      </button>
+      <button class="tab" data-tab="plan" onclick="switchTab('plan')">
+        <span class="t-icon">🗺</span>VibeMap<div class="tab-dot"></div>
+      </button>
+      <button class="tab" data-tab="budget" onclick="switchTab('budget')">
+        <span class="t-icon">💰</span>Money<div class="tab-dot"></div>
+      </button>
+      <button class="tab" data-tab="packing" onclick="switchTab('packing')">
+        <span class="t-icon">🧳</span>Bavul<div class="tab-dot"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SHEETS ===== -->
+<div id="new-trip-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('new-trip-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Seyahat ✈️</div>
+    <div class="emoji-row" id="trip-emoji-picker"></div>
+    <input class="input" id="trip-title-input" placeholder="Nereye gidiyorsunuz?">
+    <div class="row">
+      <input class="input" id="trip-start" type="date">
+      <input class="input" id="trip-end" type="date">
+    </div>
+    <button class="btn-full" onclick="createTrip()">Oluştur</button>
+  </div>
+</div>
+
+<div id="add-item-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-item-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Nokta 📍</div>
+    <div class="toggle-row">
+      <button class="toggle active" id="type-place" onclick="setItemType('place')">📍 Mekan</button>
+      <button class="toggle" id="type-ticket" onclick="setItemType('ticket')">✈️ Bilet</button>
+    </div>
+    <input class="input" id="item-name" placeholder="Mekan adı">
+    <div class="chip-row" id="category-chips"></div>
+    <div class="row">
+      <input class="input" id="item-date" type="date">
+      <input class="input" id="item-time" placeholder="Saat (HH:MM)" style="display:none">
+    </div>
+    <button class="btn-full" onclick="addItem()">Ekle</button>
+  </div>
+</div>
+
+<div id="add-moment-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-moment-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Anı 💭</div>
+    <div class="mood-row" id="mood-picker" style="justify-content:center"></div>
+    <textarea class="input" id="moment-note" placeholder="Bu anı anlat..." maxlength="280"></textarea>
+    <div class="char-count"><span id="moment-chars">0</span>/280</div>
+    <button class="btn-full" onclick="addMoment()">Kaydet</button>
+  </div>
+</div>
+
+<div id="add-expense-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-expense-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Harcama 💰</div>
+    <input class="input" id="expense-title" placeholder="Harcama adı">
+    <div class="row" style="align-items:flex-start">
+      <input class="input" id="expense-amount" placeholder="Tutar" type="number" step="0.01">
+      <div class="currency-row" id="currency-picker"></div>
+    </div>
+    <div class="chip-row" id="expense-category-chips"></div>
+    <div class="form-label">Ödeyen</div>
+    <div class="toggle-row" id="paid-by-toggle"></div>
+    <div class="form-label">Bölüşüm</div>
+    <div class="toggle-row">
+      <button class="toggle active" id="split-equal" onclick="setSplit('equal')">Yarı yarıya</button>
+      <button class="toggle" id="split-solo" onclick="setSplit('solo')">Tek kişi</button>
+    </div>
+    <button class="btn-full" onclick="addExpense()">Ekle</button>
+  </div>
+</div>
+
+<div id="add-pack-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-pack-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Bavula Ekle 🧳</div>
+    <input class="input" id="pack-item-input" placeholder="Ne ekliyorsun?">
+    <button class="btn-full" onclick="addPackItem()">Ekle</button>
+  </div>
+</div>
+
+<!-- MATCH OVERLAY -->
+<div class="match-overlay" id="match-overlay" onclick="hideMatch()">
+  <div class="match-content">
+    <div class="match-emoji" id="match-emoji"></div>
+    <div class="match-title">It's a Match! 🎉</div>
+    <div class="match-place" id="match-place"></div>
+    <div class="match-sub">VibeMap'e eklendi!</div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+let CURRENT_USER = 'zeynep';
+const PEOPLE = [
+  {name:'zeynep', initial:'Z', color:'#E8DFD0', textColor:'#A08B6A', avatar:'assets/avatars/zeynep.png'},
+  {name:'bartu', initial:'B', color:'#D4DEE8', textColor:'#5B8FC9', avatar:'assets/avatars/bartu.png'}
+];
+const TOGETHER_IMG = 'assets/avatars/together.png';
+const TRIP_EMOJIS = ['✈️','🏖','🗺','🚗','🏔','🌍','🛫','🧳'];
+const MOODS = ['😊','🥰','😎','🤩','😌'];
+const MOOD_CLS = {'😊':'m-happy','🥰':'m-love','😎':'m-cool','🤩':'m-star','😌':'m-calm'};
+const CATEGORIES = [
+  {key:'restaurant',label:'🍽 Restoran',emoji:'🍽'},
+  {key:'cafe',label:'☕ Kafe',emoji:'☕'},
+  {key:'museum',label:'🏛 Müze',emoji:'🏛'},
+  {key:'landmark',label:'📍 Gezi',emoji:'📍'},
+  {key:'shop',label:'🛍 Alışveriş',emoji:'🛍'},
+];
+const EXPENSE_CATS = [
+  {key:'food',label:'🍽 Yemek',emoji:'🍽'},
+  {key:'transport',label:'🚕 Ulaşım',emoji:'🚕'},
+  {key:'stay',label:'🏨 Konaklama',emoji:'🏨'},
+  {key:'ticket',label:'🎟 Bilet',emoji:'🎟'},
+  {key:'shopping',label:'🛍 Alışveriş',emoji:'🛍'},
+  {key:'other',label:'📦 Diğer',emoji:'📦'},
+];
+const CURRENCIES = ['TRY','EUR','USD','GBP'];
+const CAT_THUMB = {restaurant:'restaurant',cafe:'cafe',museum:'museum',landmark:'landmark',shop:'shop',ticket:'ticket'};
+
+let trips=[],currentTrip=null,currentTab='home-tab';
+let items=[],moments=[],expenses=[],packItems=[];
+let suggestions=[],votes=[];
+let selectedTripEmoji='✈️',selectedItemType='place',selectedCategory='landmark';
+let selectedMood='😊',selectedExpCat='food',selectedCurrency='TRY';
+let selectedPaidBy=CURRENT_USER,selectedSplit='equal';
+let vibeMapMode='list',vibeMapSub='places';
+let leafletMap=null;
+
+// ===== SPLASH =====
+setTimeout(()=>document.getElementById('splash').classList.add('hide'),1800);
+
+// ===== DEMO =====
+function loadDemoData(){
+  trips=[
+    {id:'1',title:'Roma Tatili',emoji:'🏛',start_date:'2026-04-10',end_date:'2026-04-17',created_by:'zeynep',created_at:'2026-02-20',city:'Roma',lat:41.9028,lng:12.4964,weather:{temp:'18°C',icon:'☀️',desc:'Güneşli',high:'22°C',low:'14°C'}},
+    {id:'2',title:'Kapadokya',emoji:'🎈',start_date:'2026-03-15',end_date:'2026-03-18',created_by:'bartu',created_at:'2026-02-18',city:'Kapadokya',lat:38.6431,lng:34.8289,weather:{temp:'8°C',icon:'🌤',desc:'Parçalı bulutlu',high:'12°C',low:'4°C'}},
+  ];
+  items=[
+    {id:'1',trip_id:'1',type:'place',title:'Colosseum',category:'landmark',date:'2026-04-11',time:null,status:'planned',added_by:'zeynep',created_at:'2026-02-20',lat:41.8902,lng:12.4922},
+    {id:'2',trip_id:'1',type:'place',title:'Trastevere Dinner',category:'restaurant',date:'2026-04-11',time:'20:00',status:'planned',added_by:'bartu',created_at:'2026-02-20',lat:41.8867,lng:12.4700},
+    {id:'3',trip_id:'1',type:'ticket',title:'IST → FCO Uçuş',category:null,date:'2026-04-10',time:'08:30',status:'planned',added_by:'zeynep',created_at:'2026-02-20'},
+    {id:'4',trip_id:'1',type:'place',title:'Vatican Müzesi',category:'museum',date:'2026-04-12',time:'10:00',status:'planned',added_by:'zeynep',created_at:'2026-02-20',lat:41.9065,lng:12.4536},
+    {id:'5',trip_id:'1',type:'place',title:'Gelato Dükkanı',category:'cafe',date:null,time:null,status:'visited',added_by:'bartu',created_at:'2026-02-20',lat:41.8964,lng:12.4737},
+  ];
+  suggestions=[
+    {id:'s1',trip_id:'1',title:'Trevi Çeşmesi',category:'landmark',emoji:'⛲',desc:'Roma\'nın ünlü dilek çeşmesi',lat:41.9009,lng:12.4833},
+    {id:'s2',trip_id:'1',title:'Pantheon',category:'landmark',emoji:'🏛',desc:'Antik Roma tapınağı',lat:41.8986,lng:12.4769},
+    {id:'s3',trip_id:'1',title:'Fatamorgana Gelato',category:'cafe',emoji:'🍦',desc:'Roma\'nın en iyi gelato dükkanı',lat:41.8919,lng:12.4725},
+    {id:'s4',trip_id:'1',title:'Trastevere Mahallesi',category:'landmark',emoji:'🏘',desc:'Renkli sokaklar, yerel atmosfer',lat:41.8867,lng:12.4700},
+    {id:'s5',trip_id:'1',title:'Campo de\' Fiori',category:'shop',emoji:'🛒',desc:'Açık hava pazarı, taze ürünler',lat:41.8956,lng:12.4722},
+    {id:'s6',trip_id:'1',title:'Piazza Navona',category:'landmark',emoji:'⛲',desc:'Barok meydanı, Bernini çeşmeleri',lat:41.8992,lng:12.4731},
+    {id:'s7',trip_id:'1',title:'Testaccio Market',category:'restaurant',emoji:'🍕',desc:'Yerel sokak yemekleri',lat:41.8769,lng:12.4761},
+    {id:'s8',trip_id:'1',title:'Villa Borghese',category:'landmark',emoji:'🌳',desc:'Şehir parkı, müze ve göl',lat:41.9142,lng:12.4922},
+  ];
+  votes=[];
+  moments=[
+    {id:'1',trip_id:'1',mood:'🤩',note:'Colosseum gerçekten inanılmazdı! Fotoğraflar hiç hakkını vermiyor.',added_by:'zeynep',created_at:'2026-04-11T14:30:00'},
+    {id:'2',trip_id:'1',mood:'🥰',note:'Trastevere\'de yediğimiz makarna hayatımın en iyisiydi.',added_by:'bartu',created_at:'2026-04-11T21:15:00'},
+    {id:'3',trip_id:'1',mood:'😎',note:'Vatican kuyruğu uzundu ama değdi!',added_by:'zeynep',created_at:'2026-04-12T16:00:00'},
+  ];
+  expenses=[
+    {id:'1',trip_id:'1',title:'Uçak bileti',amount:4200,currency:'TRY',category:'transport',paid_by:'zeynep',split:'equal',added_by:'zeynep',created_at:'2026-02-20'},
+    {id:'2',trip_id:'1',title:'Otel (3 gece)',amount:450,currency:'EUR',category:'stay',paid_by:'bartu',split:'equal',added_by:'bartu',created_at:'2026-02-20'},
+    {id:'3',trip_id:'1',title:'Trastevere Akşam Yemeği',amount:85,currency:'EUR',category:'food',paid_by:'zeynep',split:'equal',added_by:'zeynep',created_at:'2026-04-11'},
+    {id:'4',trip_id:'1',title:'Hediyelik eşya',amount:40,currency:'EUR',category:'shopping',paid_by:'bartu',split:'solo',added_by:'bartu',created_at:'2026-04-12'},
+  ];
+  packItems=[
+    {id:'1',trip_id:'1',text:'Pasaport',checked:true},
+    {id:'2',trip_id:'1',text:'Şarj kablosu',checked:false},
+    {id:'3',trip_id:'1',text:'Güneş kremi',checked:false},
+    {id:'4',trip_id:'1',text:'Rahat ayakkabı',checked:true},
+    {id:'5',trip_id:'1',text:'Adaptör (EU)',checked:false},
+  ];
+}
+
+// ===== NAV =====
+function showScreen(id,dir){
+  const cur=document.querySelector('.screen.active');
+  const nxt=document.getElementById(id);
+  if(!dir||!cur||cur===nxt){
+    document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active','slide-in-left','slide-out-left','slide-in-right','slide-out-right');s.style.display='none'});
+    nxt.classList.add('active');nxt.style.display='block';return;
+  }
+  const inC=dir==='left'?'slide-in-left':'slide-in-right';
+  const outC=dir==='left'?'slide-out-left':'slide-out-right';
+  cur.classList.remove('active');cur.classList.add(outC);
+  nxt.classList.add(inC);nxt.style.display='block';
+  setTimeout(()=>{cur.classList.remove(outC);cur.style.display='none';nxt.classList.remove(inC);nxt.classList.add('active')},300);
+}
+function goHome(){currentTrip=null;showScreen('home-screen','right');renderHome()}
+function openTrip(id){
+  currentTrip=trips.find(t=>t.id===id);
+  showScreen('trip-screen','left');
+  currentTab='home-tab';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.tab[data-tab="home-tab"]').classList.add('active');
+  renderTripHome();
+}
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  renderCurrentView();
+}
+function renderCurrentView(){
+  if(currentTab==='home-tab')renderTripHome();
+  else if(currentTab==='discover')renderDiscover();
+  else if(currentTab==='plan')renderPlan();
+  else if(currentTab==='budget')renderBudget();
+  else if(currentTab==='packing')renderPacking();
+  updateFabVisibility();
+}
+function onFabClick(){
+  if(currentTab==='plan'){
+    if(vibeMapSub==='moments')openSheet('add-moment-sheet');
+    else openSheet('add-item-sheet');
+  }
+  else if(currentTab==='home-tab')openSheet('add-item-sheet');
+  else if(currentTab==='budget')openSheet('add-expense-sheet');
+  else if(currentTab==='packing')openSheet('add-pack-sheet');
+}
+function updateFabVisibility(){
+  const fab=document.getElementById('trip-fab');
+  if(!fab)return;
+  fab.style.display=(currentTab==='discover')?'none':'flex';
+}
+function renderProfileSelect(){
+  const lastUser=localStorage.getItem('tf_lastUser');
+  const container=document.getElementById('profile-cards');
+  container.innerHTML=PEOPLE.map(p=>{
+    const inner=p.avatar?`<img src="${p.avatar}" alt="${p.name}">`:`${p.initial}`;
+    const displayName=p.name.charAt(0).toUpperCase()+p.name.slice(1);
+    const lastClass=p.name===lastUser?' last-user':'';
+    return `<div class="profile-card${lastClass}" onclick="selectProfile('${p.name}')">
+      <div class="profile-card-avatar" style="background:${p.color}">${inner}</div>
+      <div class="profile-card-info">
+        <div class="profile-card-name">${displayName}</div>
+        <div class="profile-card-sub">Hazır mısın? ✈️</div>
+      </div>
+      <div class="profile-card-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+function selectProfile(name){
+  CURRENT_USER=name;
+  selectedPaidBy=name;
+  localStorage.setItem('tf_lastUser',name);
+  const cards=document.querySelectorAll('.profile-card');
+  cards.forEach(c=>c.classList.remove('selected'));
+  const idx=PEOPLE.findIndex(p=>p.name===name);
+  if(cards[idx])cards[idx].classList.add('selected');
+  setTimeout(()=>{
+    document.getElementById('profile-select').classList.add('hide');
+    renderHome();
+  },400);
+}
+function renderProfileIndicators(){
+  const p=PEOPLE.find(p=>p.name===CURRENT_USER)||PEOPLE[0];
+  const inner=p.avatar?`<img src="${p.avatar}" alt="${p.name}">`:`${p.initial}`;
+  document.querySelectorAll('.profile-indicator').forEach(el=>{
+    el.style.background=p.color;el.style.color=p.textColor;
+    el.innerHTML=inner;
+  });
+}
+
+// ===== CONFIRM DIALOG =====
+let _confirmCb=null;
+function confirmAction({icon,title,msg,btn},cb){
+  document.getElementById('confirm-icon').textContent=icon||'🗑';
+  document.getElementById('confirm-title').textContent=title||'Silmek istediğine emin misin?';
+  document.getElementById('confirm-msg').textContent=msg||'Bu işlem geri alınamaz.';
+  document.getElementById('confirm-btn').textContent=btn||'Sil';
+  _confirmCb=cb;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function confirmOk(){
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if(_confirmCb)_confirmCb();
+  _confirmCb=null;
+}
+function confirmCancel(){
+  document.getElementById('confirm-overlay').classList.remove('open');
+  _confirmCb=null;
+}
+
+// ===== DELETE FUNCTIONS =====
+function deleteTrip(id){
+  const t=trips.find(t=>t.id===id);
+  confirmAction({icon:'✈️',title:`"${t?t.title:'Trip'}" silinsin mi?`,msg:'Tüm planlar, harcamalar ve anılar da silinecek.'},()=>{
+    trips=trips.filter(t=>t.id!==id);
+    items=items.filter(i=>i.trip_id!==id);
+    moments=moments.filter(m=>m.trip_id!==id);
+    expenses=expenses.filter(e=>e.trip_id!==id);
+    packItems=packItems.filter(p=>p.trip_id!==id);
+    suggestions=suggestions.filter(s=>s.trip_id!==id);
+    votes=votes.filter(v=>!suggestions.some(s=>s.id===v.suggestion_id));
+    saveData();
+    if(currentTrip&&currentTrip.id===id){currentTrip=null;}
+    renderHome();
+  });
+}
+function deleteItem(id){
+  const it=items.find(i=>i.id===id);
+  confirmAction({icon:'📍',title:`"${it?it.title:'Öğe'}" silinsin mi?`,msg:'Bu plan kalıcı olarak silinecek.'},()=>{
+    items=items.filter(i=>i.id!==id);saveData();renderPlan();
+  });
+}
+function deleteMoment(id){
+  const m=moments.find(m=>m.id===id);
+  confirmAction({icon:'💭',title:'Bu anı silinsin mi?',msg:m?`"${m.note.slice(0,40)}${m.note.length>40?'...':''}"`:'Bu işlem geri alınamaz.'},()=>{
+    moments=moments.filter(m=>m.id!==id);saveData();renderPlan();
+  });
+}
+function deleteExpense(id){
+  const e=expenses.find(e=>e.id===id);
+  confirmAction({icon:'💰',title:`"${e?e.title:'Harcama'}" silinsin mi?`,msg:'Bu harcama kalıcı olarak silinecek.'},()=>{
+    expenses=expenses.filter(e=>e.id!==id);saveData();renderBudget();
+  });
+}
+
+// ===== SHEETS =====
+function openSheet(id){document.getElementById(id).classList.add('open');const f=document.getElementById('trip-fab');if(f)f.classList.add('sheet-open')}
+function closeSheet(id){document.getElementById(id).classList.remove('open');const f=document.getElementById('trip-fab');if(f)f.classList.remove('sheet-open')}
+
+// ===== SWIPE =====
+function initSwipe(el,cb){
+  let sx=0,cx=0,sw=false;const fg=el.querySelector('.swipe-fg');
+  el.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;cx=sx;sw=true;fg.classList.add('swiping')},{passive:true});
+  el.addEventListener('touchmove',e=>{if(!sw)return;cx=e.touches[0].clientX;fg.style.transform=`translateX(${Math.min(0,cx-sx)}px)`},{passive:true});
+  el.addEventListener('touchend',()=>{if(!sw)return;sw=false;fg.classList.remove('swiping');if(cx-sx<-70){fg.classList.add('removing');setTimeout(cb,300)}else fg.style.transform=''});
+}
+
+// ===== HELPERS =====
+function av(name,s=26){
+  const p=PEOPLE.find(p=>p.name===name)||PEOPLE[0];
+  const inner=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;object-position:top;border-radius:50%">`:`${p.initial}`;
+  return `<div class="loc-avatar" style="width:${s}px;height:${s}px;font-size:${s*.42}px;background:${p.color};color:${p.textColor};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;overflow:hidden">${inner}</div>`;
+}
+function fmtRange(s,e){
+  const sd=new Date(s);const sm=sd.toLocaleString('tr-TR',{month:'short'});
+  const str=`${sd.getDate()} ${sm}`;
+  if(!e)return str;
+  const ed=new Date(e);return `${str} – ${ed.getDate()} ${ed.toLocaleString('tr-TR',{month:'short'})}`;
+}
+function thumbClass(cat,type){
+  if(type==='ticket')return 'ticket';
+  return cat||'default';
+}
+function catEmoji(cat,type){
+  if(type==='ticket')return '✈️';
+  const m={restaurant:'🍽',cafe:'☕',museum:'🏛',landmark:'📍',shop:'🛍'};
+  return m[cat]||'📍';
+}
+
+// ===== RENDER HOME =====
+function renderHome(){
+  document.getElementById('home-screen').classList.add('active');
+  const list=document.getElementById('trip-list');
+  const empty=document.getElementById('home-empty');
+  if(!trips.length){list.innerHTML='';empty.style.display='flex';return}
+  empty.style.display='none';
+  list.innerHTML=trips.map((t,i)=>{
+    let badge='';
+    if(t.start_date){
+      const d=Math.ceil((new Date(t.start_date)-new Date())/864e5);
+      if(d>0)badge=`<div class="trip-card-badge">${d} gün</div>`;
+      else if(d===0)badge=`<div class="trip-card-badge">Bugün!</div>`;
+      else badge=`<div class="trip-card-badge past">Geçmiş</div>`;
+    }
+    return `<div class="trip-card si" style="animation-delay:${i*60}ms">
+      <div class="trip-card-inner" onclick="openTrip('${t.id}')">
+        <div class="trip-card-circle">${t.emoji}</div>
+        <div class="trip-card-info">
+          <div class="trip-card-name">${t.title}</div>
+          <div class="trip-card-date">${t.start_date?fmtRange(t.start_date,t.end_date):'Tarih yok'}</div>
+        </div>
+        ${badge}
+      </div>
+      <button class="trip-card-delete" onclick="event.stopPropagation();deleteTrip('${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== TRIP HOME (Dashboard) =====
+function renderTripHome(){
+  const t=currentTrip;
+  const ti=items.filter(i=>i.trip_id===t.id);
+  const te=expenses.filter(e=>e.trip_id===t.id);
+  const c=document.getElementById('trip-detail');
+
+  // Countdown
+  let cdText='';
+  if(t.start_date){
+    const d=Math.ceil((new Date(t.start_date)-new Date())/864e5);
+    if(d>0)cdText=`⏳ ${d} gün kaldı`;
+    else if(d===0)cdText='🎉 Bugün!';
+    else cdText=`🌍 ${Math.abs(d)} gündür yoldasınız`;
+  }
+
+  // Budget
+  const totals={};
+  te.forEach(e=>{totals[e.currency]=(totals[e.currency]||0)+e.amount});
+  const budgetStr=Object.entries(totals).map(([c,a])=>`${a.toLocaleString('tr-TR')} ${c}`).join(' · ')||'0';
+
+  // Next stop
+  const today=new Date().toISOString().slice(0,10);
+  const upcoming=ti.filter(i=>i.date&&i.date>=today&&i.status!=='visited').sort((a,b)=>(a.date+(a.time||''))>(b.date+(b.time||''))?1:-1);
+  const next=upcoming[0];
+
+  // Program
+  const futureDates=[...new Set(ti.filter(i=>i.date).map(i=>i.date))].sort();
+  const programDate=ti.some(i=>i.date===today)?today:futureDates[0];
+  const programItems=ti.filter(i=>i.date===programDate).sort((a,b)=>(a.time||'99:99')>(b.time||'99:99')?1:-1);
+  let programLabel='';
+  if(programDate){
+    if(programDate===today)programLabel='Bugünkü Program';
+    else{const d=new Date(programDate);programLabel=`${d.getDate()} ${d.toLocaleString('tr-TR',{month:'long'})} Programı`;}
+  }
+
+  // Weather
+  const w=t.weather;
+
+  let h=`
+  <div class="greet-header">
+    <button class="greet-back" onclick="goHome()">‹</button>
+    <div class="greet-text">Hello, <span>${CURRENT_USER.charAt(0).toUpperCase()+CURRENT_USER.slice(1)}</span> 👋</div>
+    <div class="profile-indicator" id="pi"></div>
+  </div>
+
+  <div class="hero-circle-wrap">
+    <div class="hero-together">
+      <img src="${TOGETHER_IMG}" alt="biz">
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:-6px">
+    <div class="trip-name-overlay" style="display:inline-block;background:var(--card);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.08)">${t.emoji} ${t.title}</div>
+  </div>
+
+  ${w?`<div style="text-align:center"><div class="weather-widget">
+    <span class="weather-icon">${w.icon}</span>
+    <span class="weather-temp">${w.temp}</span>
+    <span class="weather-desc">${w.desc}</span>
+    <span class="weather-hl">H:${w.high} L:${w.low}</span>
+  </div></div>`:''}
+
+  ${cdText?`<div class="countdown-strip"><div class="countdown-pill">${cdText}</div></div>`:''}
+
+  <div class="pill-row">
+    <button class="pill-btn" onclick="switchTab('budget')"><span class="p-icon">💰</span>Budget</button>
+    <button class="pill-btn accent" onclick="switchTab('plan')"><span class="p-icon">📍</span>Next Stop</button>
+    <button class="pill-btn" onclick="switchTab('packing')"><span class="p-icon">🧳</span>Bavul</button>
+  </div>`;
+
+  if(programItems.length>0){
+    h+=`<div class="section">
+      <div class="section-top">
+        <div class="section-title">${programLabel}</div>
+        <button class="section-link" onclick="switchTab('plan')">Tümü →</button>
+      </div>
+      ${programItems.map((item,i)=>`
+        <div class="loc-card si" style="animation-delay:${i*50}ms">
+          <div class="loc-thumb ${thumbClass(item.category,item.type)}">${catEmoji(item.category,item.type)}</div>
+          <div class="loc-info">
+            <div class="loc-title">${item.title}</div>
+            <div class="loc-sub">${item.time?item.time.slice(0,5):fmtRange(item.date)}</div>
+          </div>
+          ${av(item.added_by)}
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  // Quick budget summary
+  if(te.length>0){
+    h+=`<div class="section">
+      <div class="section-top">
+        <div class="section-title">Money Talk 💰</div>
+        <button class="section-link" onclick="switchTab('budget')">Detay →</button>
+      </div>
+      <div style="background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.03)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Toplam</div>
+        <div style="font-size:22px;font-weight:800;margin-top:4px">${budgetStr}</div>
+      </div>
+    </div>`;
+  }
+
+  c.innerHTML=h;
+  renderProfileIndicators();
+}
+
+// ===== RENDER PLAN (VibeMap) =====
+function renderPlan(){
+  const ti=items.filter(i=>i.trip_id===currentTrip.id);
+  const tm=moments.filter(m=>m.trip_id===currentTrip.id);
+  const c=document.getElementById('trip-detail');
+
+  let h=`<div class="greet-header">
+    <button class="greet-back" onclick="goHome()">‹</button>
+    <div class="section-title">The VibeMap 🗺</div>
+    <div class="profile-indicator" id="pi"></div>
+  </div>`;
+
+  // Map/List toggle
+  h+=`<div class="map-toggle">
+    <button class="map-toggle-btn ${vibeMapMode==='list'?'active':''}" onclick="setVibeMapMode('list')">📋 Liste</button>
+    <button class="map-toggle-btn ${vibeMapMode==='map'?'active':''}" onclick="setVibeMapMode('map')">🗺 Harita</button>
+  </div>`;
+
+  if(vibeMapMode==='map'){
+    h+=`<div id="leaflet-map" style="height:400px"></div>`;
+    c.innerHTML=h;
+    renderProfileIndicators();
+    setTimeout(()=>initLeafletMap(ti),50);
+    return;
+  }
+
+  // Sub toggle: Mekanlar / Anılar
+  h+=`<div class="vibemap-sub-toggle">
+    <button class="vibemap-sub-btn ${vibeMapSub==='places'?'active':''}" onclick="setVibeMapSub('places')">📍 Mekanlar</button>
+    <button class="vibemap-sub-btn ${vibeMapSub==='moments'?'active':''}" onclick="setVibeMapSub('moments')">💭 Anılar</button>
+  </div>`;
+
+  if(vibeMapSub==='moments'){
+    // Render moments inside VibeMap
+    if(!tm.length){
+      h+=`<div class="empty-state"><div class="e-icon">💭</div><p>Henüz anı yok.<br>İlk anınızı ekleyin!</p><button class="btn-accent" onclick="openSheet('add-moment-sheet')">Yaz</button></div>`;
+    } else {
+      const grouped={};
+      tm.forEach(m=>{const d=new Date(m.created_at);const k=d.toISOString().slice(0,10);if(!grouped[k])grouped[k]=[];grouped[k].push(m)});
+      h+=`<div style="padding:0 20px">`;
+      let idx=0;
+      Object.keys(grouped).sort().reverse().forEach(k=>{
+        const d=new Date(k);
+        h+=`<div class="sec-header">${d.getDate()} ${d.toLocaleString('tr-TR',{month:'long'})}</div>`;
+        grouped[k].forEach(m=>{
+          const t=new Date(m.created_at);
+          const ts=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+          h+=`<div class="moment-card ${MOOD_CLS[m.mood]||''} si" style="animation-delay:${idx*50}ms">
+            <button class="moment-delete" onclick="deleteMoment('${m.id}')">✕</button>
+            <div class="m-mood">${m.mood}</div>
+            <div class="m-note">${m.note}</div>
+            <div class="m-footer">${av(m.added_by,20)}<span class="m-time">${ts}</span></div>
+          </div>`;
+          idx++;
+        });
+      });
+      h+=`</div>`;
+    }
+    c.innerHTML=h;
+    renderProfileIndicators();
+    return;
+  }
+
+  // Places list (default)
+  if(!ti.length){
+    h+=`<div class="empty-state"><div class="e-icon">📍</div><p>Henüz plan yok.<br>İlk noktayı ekleyin!</p><button class="btn-accent" onclick="openSheet('add-item-sheet')">Ekle</button></div>`;
+    c.innerHTML=h;renderProfileIndicators();return;
+  }
+
+  const dated={},undated=[];
+  ti.forEach(item=>{if(item.date){if(!dated[item.date])dated[item.date]=[];dated[item.date].push(item)}else undated.push(item)});
+
+  h+=`<div style="padding:0 20px">`;
+  Object.keys(dated).sort().forEach(date=>{
+    const d=new Date(date);
+    h+=`<div class="sec-header">${d.getDate()} ${d.toLocaleString('tr-TR',{month:'long'})}</div>`;
+    dated[date].forEach((item,i)=>{
+      h+=`<div class="swipe-wrap" data-id="${item.id}"><div class="swipe-bg">Sil</div><div class="swipe-fg">
+        <div class="loc-card si" style="animation-delay:${i*40}ms;${item.status==='visited'?'opacity:.5':''}">
+          <div class="loc-thumb ${thumbClass(item.category,item.type)}">${catEmoji(item.category,item.type)}</div>
+          <div class="loc-info">
+            <div class="loc-title">${item.status==='visited'?'✓ ':''}${item.title}</div>
+            <div class="loc-sub">${item.time?item.time.slice(0,5):'Saat belirtilmedi'}</div>
+          </div>
+          ${av(item.added_by)}
+        </div>
+      </div></div>`;
+    });
+  });
+  if(undated.length){
+    h+=`<div class="sec-header">Tarihsiz</div>`;
+    undated.forEach((item,i)=>{
+      h+=`<div class="swipe-wrap" data-id="${item.id}"><div class="swipe-bg">Sil</div><div class="swipe-fg">
+        <div class="loc-card si" style="animation-delay:${i*40}ms;${item.status==='visited'?'opacity:.5':''}">
+          <div class="loc-thumb ${thumbClass(item.category,item.type)}">${catEmoji(item.category,item.type)}</div>
+          <div class="loc-info">
+            <div class="loc-title">${item.title}</div>
+            <div class="loc-sub">Tarihsiz</div>
+          </div>
+          ${av(item.added_by)}
+        </div>
+      </div></div>`;
+    });
+  }
+  h+=`</div>`;
+  c.innerHTML=h;
+  renderProfileIndicators();
+
+  setTimeout(()=>{c.querySelectorAll('.swipe-wrap').forEach(w=>{const id=w.dataset.id;if(!id)return;initSwipe(w,()=>deleteItem(id))})},50);
+}
+function setVibeMapMode(mode){vibeMapMode=mode;renderPlan()}
+function setVibeMapSub(sub){vibeMapSub=sub;renderPlan()}
+
+// ===== LEAFLET MAP =====
+function initLeafletMap(ti){
+  const mapEl=document.getElementById('leaflet-map');
+  if(!mapEl||typeof L==='undefined')return;
+  if(leafletMap){leafletMap.remove();leafletMap=null}
+  const t=currentTrip;
+  leafletMap=L.map('leaflet-map').setView([t.lat||41.9,t.lng||12.5],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap',maxZoom:18
+  }).addTo(leafletMap);
+  ti.forEach(item=>{
+    if(!item.lat||!item.lng)return;
+    const emoji=catEmoji(item.category,item.type);
+    const icon=L.divIcon({html:`<span style="font-size:24px">${emoji}</span>`,className:'emoji-marker',iconSize:[30,30],iconAnchor:[15,15]});
+    L.marker([item.lat,item.lng],{icon}).addTo(leafletMap).bindPopup(`<b>${item.title}</b><br><small>${item.added_by}</small>`);
+  });
+}
+
+// ===== RENDER MOMENTS (reused in VibeMap) =====
+function renderMoments(){
+  const tm=moments.filter(m=>m.trip_id===currentTrip.id);
+  const c=document.getElementById('trip-detail');
+
+  let h=`<div class="greet-header">
+    <button class="greet-back" onclick="goHome()">‹</button>
+    <div class="section-title">Anılar 💭</div>
+    <div class="profile-indicator" id="pi"></div>
+  </div>`;
+
+  if(!tm.length){
+    h+=`<div class="empty-state">
+      <div style="font-size:17px;font-weight:700;margin-bottom:20px">Nasıl hissediyorsun?</div>
+      <div class="empty-moods">${MOODS.map(m=>`<button class="empty-mood-btn" onclick="selectedMood='${m}';openSheet('add-moment-sheet')">${m}</button>`).join('')}</div>
+      <div style="font-size:13px;color:var(--muted)">Bir emoji seç ve anını yaz</div>
+    </div>`;
+    c.innerHTML=h;renderProfileIndicators();return;
+  }
+
+  const grouped={};
+  tm.forEach(m=>{const d=new Date(m.created_at);const k=d.toISOString().slice(0,10);if(!grouped[k])grouped[k]=[];grouped[k].push(m)});
+
+  h+=`<div style="padding:0 20px">`;
+  let idx=0;
+  Object.keys(grouped).sort().reverse().forEach(k=>{
+    const d=new Date(k);
+    h+=`<div class="sec-header">${d.getDate()} ${d.toLocaleString('tr-TR',{month:'long'})}</div>`;
+    grouped[k].forEach(m=>{
+      const t=new Date(m.created_at);
+      const ts=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+      h+=`<div class="moment-card ${MOOD_CLS[m.mood]||''} si" style="animation-delay:${idx*50}ms">
+        <div class="m-mood">${m.mood}</div>
+        <div class="m-note">${m.note}</div>
+        <div class="m-footer">${av(m.added_by,20)}<span class="m-time">${ts}</span></div>
+      </div>`;
+      idx++;
+    });
+  });
+  h+=`</div>`;
+  c.innerHTML=h;
+  renderProfileIndicators();
+}
+
+// ===== RENDER BUDGET (Money Talk) =====
+function renderBudget(){
+  const te=expenses.filter(e=>e.trip_id===currentTrip.id);
+  const c=document.getElementById('trip-detail');
+
+  let h=`<div class="greet-header">
+    <button class="greet-back" onclick="goHome()">‹</button>
+    <div class="section-title">Money Talk 💰</div>
+    <div class="profile-indicator" id="pi"></div>
+  </div>`;
+
+  if(!te.length){
+    h+=`<div class="empty-state"><div class="e-icon">💰</div><p>Henüz harcama yok.<br>İlk harcamayı ekleyin!</p><button class="btn-accent" onclick="openSheet('add-expense-sheet')">Ekle</button></div>`;
+    c.innerHTML=h;renderProfileIndicators();return;
+  }
+
+  const totals={},pp={};
+  te.forEach(e=>{totals[e.currency]=(totals[e.currency]||0)+e.amount;if(!pp[e.paid_by])pp[e.paid_by]={};pp[e.paid_by][e.currency]=(pp[e.paid_by][e.currency]||0)+e.amount});
+
+  const catIcons={food:'🍽',transport:'🚕',stay:'🏨',ticket:'🎟',shopping:'🛍',other:'📦'};
+
+  h+=`<div style="padding:0 20px">`;
+  h+=`<div class="money-header">
+    <div class="money-label">Total Spent</div>
+    ${Object.entries(totals).map(([cur,a])=>`<div class="money-total">${a.toLocaleString('tr-TR',{minimumFractionDigits:2})} <span class="currency">${cur}</span></div>`).join('')}
+    <div class="money-people">
+      ${PEOPLE.map(p=>{
+        const pt=pp[p.name]||{};
+        const pc=Object.keys(totals)[0];
+        const pa=pt[pc]||0;
+        const ta=totals[pc]||1;
+        const pct=Math.round((pa/ta)*100);
+        return `<div class="money-person">
+          <div class="money-person-name">${av(p.name,18)} ${p.name.charAt(0).toUpperCase()+p.name.slice(1)}</div>
+          ${Object.entries(pt).map(([c,a])=>`<div class="money-person-amt">${a.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${c}</div>`).join('')||'<div class="money-person-amt">0</div>'}
+          <div class="money-bar"><div class="money-bar-fill" style="width:${pct}%;background:${p.textColor}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  te.forEach((e,i)=>{
+    h+=`<div class="swipe-wrap" data-eid="${e.id}"><div class="swipe-bg">Sil</div><div class="swipe-fg">
+      <div class="expense-card si" style="animation-delay:${i*40}ms">
+        <div class="expense-icon">${catIcons[e.category]||'📦'}</div>
+        <div class="expense-info">
+          <div class="expense-title">${e.title}</div>
+          <div class="expense-meta">${e.paid_by} ödedi · ${e.split==='equal'?'Yarı yarıya':'Tek kişi'}</div>
+        </div>
+        <div class="expense-amt">${e.amount.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${e.currency}</div>
+      </div>
+    </div></div>`;
+  });
+
+  h+=`</div>`;
+  c.innerHTML=h;
+  renderProfileIndicators();
+
+  setTimeout(()=>{c.querySelectorAll('.swipe-wrap').forEach(w=>{const id=w.dataset.eid;if(!id)return;initSwipe(w,()=>deleteExpense(id))})},50);
+}
+
+// ===== RENDER PACKING =====
+function renderPacking(){
+  const tp=packItems.filter(p=>p.trip_id===currentTrip.id);
+  const c=document.getElementById('trip-detail');
+
+  const done=tp.filter(p=>p.checked).length;
+  const total=tp.length;
+
+  let h=`<div class="greet-header">
+    <button class="greet-back" onclick="goHome()">‹</button>
+    <div class="section-title">Bavul 🧳</div>
+    <div class="profile-indicator" id="pi"></div>
+  </div>`;
+
+  if(!tp.length){
+    h+=`<div class="empty-state"><div class="e-icon">🧳</div><p>Bavul boş!<br>Ne alacaksınız?</p><button class="btn-accent" onclick="openSheet('add-pack-sheet')">Ekle</button></div>`;
+    c.innerHTML=h;renderProfileIndicators();return;
+  }
+
+  h+=`<div style="padding:0 20px">`;
+  h+=`<div style="text-align:center;padding:16px 0">
+    <div class="countdown-pill">${done}/${total} hazır ${done===total?'✅':'📦'}</div>
+  </div>`;
+
+  tp.forEach((item,i)=>{
+    h+=`<div class="pack-item si ${item.checked?'done':''}" style="animation-delay:${i*30}ms" data-pid="${item.id}">
+      <button class="pack-check ${item.checked?'checked':''}" onclick="togglePack('${item.id}')">✓</button>
+      <div class="pack-text">${item.text}</div>
+      <button class="pack-delete" onclick="deletePack('${item.id}')">✕</button>
+    </div>`;
+  });
+
+  h+=`</div>`;
+  c.innerHTML=h;
+  renderProfileIndicators();
+}
+
+function togglePack(id){
+  const item=packItems.find(p=>p.id===id);
+  if(item){item.checked=!item.checked;saveData();renderPacking()}
+}
+function deletePack(id){
+  const p=packItems.find(p=>p.id===id);
+  confirmAction({icon:'🧳',title:`"${p?p.text:'Öğe'}" silinsin mi?`,msg:'Bavuldan kalıcı olarak çıkarılacak.'},()=>{
+    packItems=packItems.filter(p=>p.id!==id);saveData();renderPacking();
+  });
+}
+
+// ===== PICKERS =====
+function initPickers(){
+  document.getElementById('trip-emoji-picker').innerHTML=TRIP_EMOJIS.map(e=>`<div class="emoji-option ${e===selectedTripEmoji?'selected':''}" onclick="selectTripEmoji(this,'${e}')">${e}</div>`).join('');
+  document.getElementById('category-chips').innerHTML=CATEGORIES.map(c=>`<button class="chip ${c.key===selectedCategory?'active':''}" onclick="selectCategory(this,'${c.key}')">${c.label}</button>`).join('');
+  document.getElementById('mood-picker').innerHTML=MOODS.map(m=>`<div class="mood-option ${m===selectedMood?'selected':''}" onclick="selectMood(this,'${m}')">${m}</div>`).join('');
+  document.getElementById('expense-category-chips').innerHTML=EXPENSE_CATS.map(c=>`<button class="chip ${c.key===selectedExpCat?'active':''}" onclick="selectExpCat(this,'${c.key}')">${c.label}</button>`).join('');
+  document.getElementById('currency-picker').innerHTML=CURRENCIES.map(c=>`<button class="currency-btn ${c===selectedCurrency?'active':''}" onclick="selectCurrency(this,'${c}')">${c}</button>`).join('');
+  document.getElementById('paid-by-toggle').innerHTML=PEOPLE.map(p=>`<button class="toggle ${p.name===selectedPaidBy?'active':''}" onclick="selectPaidBy(this,'${p.name}')">${p.name.charAt(0).toUpperCase()+p.name.slice(1)}</button>`).join('');
+  document.getElementById('moment-note').addEventListener('input',function(){document.getElementById('moment-chars').textContent=this.value.length});
+}
+
+// ===== SELECTION =====
+function selectTripEmoji(el,e){selectedTripEmoji=e;el.parentElement.querySelectorAll('.emoji-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected')}
+function selectCategory(el,k){selectedCategory=k;el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active')}
+function selectMood(el,m){selectedMood=m;el.parentElement.querySelectorAll('.mood-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected')}
+function selectExpCat(el,k){selectedExpCat=k;el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active')}
+function selectCurrency(el,c){selectedCurrency=c;el.parentElement.querySelectorAll('.currency-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active')}
+function selectPaidBy(el,p){selectedPaidBy=p;el.parentElement.querySelectorAll('.toggle').forEach(t=>t.classList.remove('active'));el.classList.add('active')}
+function setItemType(type){
+  selectedItemType=type;
+  document.getElementById('type-place').classList.toggle('active',type==='place');
+  document.getElementById('type-ticket').classList.toggle('active',type==='ticket');
+  document.getElementById('item-name').placeholder=type==='place'?'Mekan adı':'Bilet adı';
+  document.getElementById('item-time').style.display=type==='ticket'?'block':'none';
+  document.getElementById('category-chips').style.display=type==='place'?'flex':'none';
+}
+function setSplit(s){
+  selectedSplit=s;
+  document.getElementById('split-equal').classList.toggle('active',s==='equal');
+  document.getElementById('split-solo').classList.toggle('active',s==='solo');
+}
+
+// ===== CRUD =====
+function createTrip(){
+  const title=document.getElementById('trip-title-input').value.trim();if(!title)return;
+  const trip={id:Date.now().toString(),title,emoji:selectedTripEmoji,start_date:document.getElementById('trip-start').value||null,end_date:document.getElementById('trip-end').value||null,created_by:CURRENT_USER,created_at:new Date().toISOString()};
+  trips.unshift(trip);closeSheet('new-trip-sheet');
+  document.getElementById('trip-title-input').value='';document.getElementById('trip-start').value='';document.getElementById('trip-end').value='';
+  openTrip(trip.id);
+}
+function addItem(){
+  const name=document.getElementById('item-name').value.trim();if(!name)return;
+  items.push({id:Date.now().toString(),trip_id:currentTrip.id,type:selectedItemType,title:name,category:selectedItemType==='place'?selectedCategory:null,date:document.getElementById('item-date').value||null,time:document.getElementById('item-time').value||null,status:'planned',added_by:CURRENT_USER,created_at:new Date().toISOString()});
+  closeSheet('add-item-sheet');document.getElementById('item-name').value='';document.getElementById('item-date').value='';document.getElementById('item-time').value='';
+  if(currentTab==='plan')renderPlan();else renderTripHome();
+}
+function addMoment(){
+  const note=document.getElementById('moment-note').value.trim();if(!note)return;
+  moments.push({id:Date.now().toString(),trip_id:currentTrip.id,mood:selectedMood,note,added_by:CURRENT_USER,created_at:new Date().toISOString()});
+  closeSheet('add-moment-sheet');document.getElementById('moment-note').value='';document.getElementById('moment-chars').textContent='0';if(currentTab==='plan')renderPlan();else renderMoments();
+}
+function addExpense(){
+  const title=document.getElementById('expense-title').value.trim();const amount=parseFloat(document.getElementById('expense-amount').value);if(!title||isNaN(amount))return;
+  expenses.push({id:Date.now().toString(),trip_id:currentTrip.id,title,amount,currency:selectedCurrency,category:selectedExpCat,paid_by:selectedPaidBy,split:selectedSplit,added_by:CURRENT_USER,created_at:new Date().toISOString()});
+  closeSheet('add-expense-sheet');document.getElementById('expense-title').value='';document.getElementById('expense-amount').value='';renderBudget();
+}
+function addPackItem(){
+  const text=document.getElementById('pack-item-input').value.trim();if(!text)return;
+  packItems.push({id:Date.now().toString(),trip_id:currentTrip.id,text,checked:false});
+  closeSheet('add-pack-sheet');document.getElementById('pack-item-input').value='';saveData();renderPacking();
+}
+
+// ===== DISCOVER (Swipe Match) =====
+function renderDiscover(){
+  const c=document.getElementById('trip-detail');
+  const tripSugs=suggestions.filter(s=>s.trip_id===currentTrip.id);
+  // Filter: not yet voted by current user
+  const remaining=tripSugs.filter(s=>{
+    const myVote=votes.find(v=>v.suggestion_id===s.id&&v.user===CURRENT_USER);
+    if(myVote)return false;
+    // Also skip if both voted "no"
+    const otherNo=votes.find(v=>v.suggestion_id===s.id&&v.vote==='no');
+    const myNo=votes.find(v=>v.suggestion_id===s.id&&v.user===CURRENT_USER&&v.vote==='no');
+    return !myNo;
+  });
+
+  let h=`<div class="greet-header">
+    <button class="greet-back" onclick="goHome()">‹</button>
+    <div class="section-title">Keşfet 🔥</div>
+    <div class="profile-indicator" id="pi"></div>
+  </div>`;
+
+  if(!remaining.length){
+    h+=`<div class="empty-state"><div class="e-icon">🎉</div><p>Hepsini gördün!<br>Yeni öneriler yakında.</p></div>`;
+    // Show waiting count
+    const waitingCount=tripSugs.filter(s=>{
+      const myVote=votes.find(v=>v.suggestion_id===s.id&&v.user===CURRENT_USER);
+      const otherVote=votes.find(v=>v.suggestion_id===s.id&&v.user!==CURRENT_USER);
+      return myVote&&myVote.vote==='yes'&&!otherVote;
+    }).length;
+    if(waitingCount>0)h+=`<div class="waiting-badge">⏳ ${waitingCount} öneri partnerini bekliyor</div>`;
+    c.innerHTML=h;renderProfileIndicators();return;
+  }
+
+  const top2=remaining.slice(0,2);
+
+  h+=`<div class="discover-container">
+    <div class="card-stack" id="card-stack">`;
+  // Render in reverse so first card is on top
+  for(let i=Math.min(1,top2.length-1);i>=0;i--){
+    const s=top2[i];
+    h+=`<div class="swipe-card" data-sid="${s.id}" style="${i>0?'transform:scale(0.95) translateY(10px);opacity:0.7;pointer-events:none':''}">
+      <div class="vote-overlay like">👍</div>
+      <div class="vote-overlay nope">👎</div>
+      <div class="card-emoji">${s.emoji}</div>
+      <div class="card-title">${s.title}</div>
+      <div class="card-cat">${s.category}</div>
+      <div class="card-desc">${s.desc}</div>
+    </div>`;
+  }
+  h+=`</div>
+    <div class="discover-actions">
+      <button class="discover-btn nope" onclick="voteBtn('no')">✕</button>
+      <button class="discover-btn like" onclick="voteBtn('yes')">♥</button>
+    </div>`;
+  // Waiting badge
+  const waitCount=tripSugs.filter(s=>{
+    const myVote=votes.find(v=>v.suggestion_id===s.id&&v.user===CURRENT_USER);
+    const otherVote=votes.find(v=>v.suggestion_id===s.id&&v.user!==CURRENT_USER);
+    return myVote&&myVote.vote==='yes'&&!otherVote;
+  }).length;
+  if(waitCount>0)h+=`<div class="waiting-badge">⏳ ${waitCount} öneri partnerini bekliyor</div>`;
+  h+=`</div>`;
+
+  c.innerHTML=h;
+  renderProfileIndicators();
+
+  // Init swipe gesture on top card
+  setTimeout(()=>initDiscoverSwipe(),50);
+}
+
+function initDiscoverSwipe(){
+  const stack=document.getElementById('card-stack');
+  if(!stack)return;
+  const card=stack.querySelector('.swipe-card:last-child');
+  if(!card)return;
+
+  let startX=0,currentX=0,isDragging=false;
+  const likeOverlay=card.querySelector('.vote-overlay.like');
+  const nopeOverlay=card.querySelector('.vote-overlay.nope');
+
+  function onStart(x){startX=x;currentX=x;isDragging=true;card.style.transition='none'}
+  function onMove(x){
+    if(!isDragging)return;
+    currentX=x;
+    const dx=currentX-startX;
+    const rotate=dx*0.08;
+    card.style.transform=`translateX(${dx}px) rotate(${rotate}deg)`;
+    if(dx>40)likeOverlay.style.opacity=Math.min((dx-40)/60,1);
+    else likeOverlay.style.opacity=0;
+    if(dx<-40)nopeOverlay.style.opacity=Math.min((-dx-40)/60,1);
+    else nopeOverlay.style.opacity=0;
+  }
+  function onEnd(){
+    if(!isDragging)return;
+    isDragging=false;
+    const dx=currentX-startX;
+    card.style.transition='transform 0.3s, opacity 0.3s';
+    if(dx>80){
+      card.style.transform=`translateX(400px) rotate(20deg)`;card.style.opacity='0';
+      setTimeout(()=>vote(card.dataset.sid,'yes'),300);
+    }else if(dx<-80){
+      card.style.transform=`translateX(-400px) rotate(-20deg)`;card.style.opacity='0';
+      setTimeout(()=>vote(card.dataset.sid,'no'),300);
+    }else{
+      card.style.transform='';likeOverlay.style.opacity=0;nopeOverlay.style.opacity=0;
+    }
+  }
+
+  card.addEventListener('touchstart',e=>{onStart(e.touches[0].clientX)},{passive:true});
+  card.addEventListener('touchmove',e=>{onMove(e.touches[0].clientX)},{passive:true});
+  card.addEventListener('touchend',onEnd);
+  card.addEventListener('mousedown',e=>{onStart(e.clientX);
+    const mm=ev=>onMove(ev.clientX);
+    const mu=()=>{onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  });
+}
+
+function voteBtn(type){
+  const stack=document.getElementById('card-stack');
+  if(!stack)return;
+  const card=stack.querySelector('.swipe-card:last-child');
+  if(!card)return;
+  card.style.transition='transform 0.3s, opacity 0.3s';
+  if(type==='yes'){
+    card.style.transform='translateX(400px) rotate(20deg)';card.style.opacity='0';
+  }else{
+    card.style.transform='translateX(-400px) rotate(-20deg)';card.style.opacity='0';
+  }
+  setTimeout(()=>vote(card.dataset.sid,type),300);
+}
+
+function vote(suggestionId,voteType){
+  votes.push({suggestion_id:suggestionId,user:CURRENT_USER,vote:voteType});
+
+  // Check for match: both users voted "yes"
+  if(voteType==='yes'){
+    const otherYes=votes.find(v=>v.suggestion_id===suggestionId&&v.user!==CURRENT_USER&&v.vote==='yes');
+    if(otherYes){
+      const sug=suggestions.find(s=>s.id===suggestionId);
+      if(sug){
+        // Add to items (matched!)
+        items.push({
+          id:Date.now().toString(),trip_id:sug.trip_id,type:'place',
+          title:sug.title,category:sug.category,
+          date:null,time:null,status:'planned',
+          added_by:'match',created_at:new Date().toISOString(),
+          lat:sug.lat,lng:sug.lng
+        });
+        showMatch(sug);
+      }
+    }
+  }
+
+  saveData();
+  // Small delay for match animation, then re-render
+  setTimeout(()=>renderDiscover(),200);
+}
+
+function showMatch(sug){
+  const overlay=document.getElementById('match-overlay');
+  document.getElementById('match-emoji').textContent=sug.emoji;
+  document.getElementById('match-place').textContent=sug.title;
+  overlay.classList.add('show');
+  setTimeout(()=>overlay.classList.remove('show'),1800);
+}
+function hideMatch(){document.getElementById('match-overlay').classList.remove('show')}
+
+// ===== PERSISTENCE =====
+function saveData(){
+  localStorage.setItem('tf_trips',JSON.stringify(trips));
+  localStorage.setItem('tf_items',JSON.stringify(items));
+  localStorage.setItem('tf_moments',JSON.stringify(moments));
+  localStorage.setItem('tf_expenses',JSON.stringify(expenses));
+  localStorage.setItem('tf_pack',JSON.stringify(packItems));
+  localStorage.setItem('tf_suggestions',JSON.stringify(suggestions));
+  localStorage.setItem('tf_votes',JSON.stringify(votes));
+}
+function loadData(){
+  const t=localStorage.getItem('tf_trips');
+  if(t){trips=JSON.parse(t);items=JSON.parse(localStorage.getItem('tf_items')||'[]');moments=JSON.parse(localStorage.getItem('tf_moments')||'[]');expenses=JSON.parse(localStorage.getItem('tf_expenses')||'[]');packItems=JSON.parse(localStorage.getItem('tf_pack')||'[]');suggestions=JSON.parse(localStorage.getItem('tf_suggestions')||'[]');votes=JSON.parse(localStorage.getItem('tf_votes')||'[]');return true}
+  return false;
+}
+const _ct=createTrip;createTrip=function(){_ct();saveData()};
+const _ai=addItem;addItem=function(){_ai();saveData()};
+const _am=addMoment;addMoment=function(){_am();saveData()};
+const _ae=addExpense;addExpense=function(){_ae();saveData()};
+
+// ===== SW =====
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// ===== START =====
+if(!loadData())loadDemoData();
+initPickers();
+renderProfileSelect();
+</script>
+</body>
+</html>

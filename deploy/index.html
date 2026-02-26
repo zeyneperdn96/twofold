@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1C1C1E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Us & Where">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Us & Where</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #FAFAF7;
+    --card: #F5F0EB;
+    --dark: #1C1C1E;
+    --muted: #8E8E93;
+    --accent: #A08B6A;
+    --accent-light: #E8DFD0;
+    --white: #FFFFFF;
+    --border: #E5E5E5;
+    --danger: #D32F2F;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header-back {
+    font-size: 28px;
+    font-weight: 300;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 8px;
+    color: var(--dark);
+  }
+  .header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-title-row h2 { font-size: 17px; font-weight: 600; }
+  .add-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--dark); color: var(--white);
+    border: none; font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; min-height: 100vh; padding-bottom: 80px; }
+  .screen.active { display: block; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 24px; text-align: center;
+  }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 16px; color: var(--muted); margin-bottom: 24px; }
+  .btn-primary {
+    background: var(--dark); color: var(--white);
+    border: none; border-radius: 12px;
+    padding: 14px 24px; font-size: 14px;
+    font-weight: 600; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary:disabled { opacity: 0.4; }
+
+  /* ===== TRIP CARD ===== */
+  .trip-card {
+    display: flex; align-items: center;
+    background: var(--card); border-radius: 12px;
+    padding: 16px; margin: 0 20px 8px; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .trip-card:active { transform: scale(0.98); }
+  .trip-card .emoji { font-size: 32px; margin-right: 16px; }
+  .trip-card .title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .trip-card .subtitle { font-size: 13px; color: var(--muted); }
+
+  /* ===== TAB BAR ===== */
+  .tab-bar {
+    display: flex; position: fixed; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: var(--bg); border-top: 1px solid var(--border);
+    z-index: 20;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 8px 0 12px;
+    cursor: pointer; border: none; background: none;
+    color: var(--muted); font-size: 11px; font-weight: 500;
+    font-family: inherit; gap: 2px;
+  }
+  .tab.active { color: var(--dark); }
+  .tab .icon { font-size: 18px; }
+
+  /* ===== FAB ===== */
+  .fab {
+    position: fixed; right: calc(50% - 195px);
+    bottom: 80px; width: 52px; height: 52px;
+    border-radius: 50%; background: var(--dark);
+    color: var(--white); border: none;
+    font-size: 26px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 15;
+  }
+
+  /* ===== BOTTOM SHEET ===== */
+  .sheet-overlay {
+    display: none; position: fixed; inset: 0;
+    z-index: 100; justify-content: flex-end;
+  }
+  .sheet-overlay.open { display: flex; }
+  .sheet-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.4);
+  }
+  .sheet {
+    position: relative; background: var(--white);
+    border-radius: 16px 16px 0 0;
+    padding: 24px; max-height: 85%;
+    overflow-y: auto; z-index: 1;
+    width: 100%;
+  }
+  .sheet .handle {
+    width: 36px; height: 4px;
+    background: #D1D1D6; border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .sheet-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+
+  /* ===== FORM ELEMENTS ===== */
+  .input {
+    width: 100%; font-family: inherit; font-size: 15px;
+    color: var(--dark); background: var(--card);
+    border: none; border-radius: 10px;
+    padding: 14px; margin-bottom: 12px; outline: none;
+  }
+  .input::placeholder { color: var(--muted); }
+  .row { display: flex; gap: 8px; }
+  .row .input { flex: 1; }
+
+  .emoji-row, .chip-row, .mood-row {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+  }
+  .emoji-option, .mood-option {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--card); border: 2px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer;
+  }
+  .mood-option { width: 48px; height: 48px; border-radius: 50%; font-size: 24px; }
+  .emoji-option.selected, .mood-option.selected {
+    background: var(--accent-light);
+    border-color: var(--accent);
+  }
+  .chip {
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--card); border: 1.5px solid transparent;
+    font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .chip.active {
+    background: var(--accent-light);
+    border-color: var(--accent);
+  }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .toggle {
+    flex: 1; padding: 10px; border-radius: 10px;
+    background: var(--card); border: none;
+    font-family: inherit; font-size: 14px;
+    font-weight: 500; cursor: pointer; text-align: center;
+  }
+  .toggle.active { background: var(--dark); color: var(--white); }
+  .label { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .btn-full {
+    width: 100%; padding: 16px; border-radius: 12px;
+    background: var(--dark); color: var(--white);
+    border: none; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 4px; font-family: inherit;
+  }
+
+  /* ===== SECTION HEADERS ===== */
+  .section-header {
+    padding: 16px 20px 8px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== TIMELINE ITEM ===== */
+  .timeline-item {
+    display: flex; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .timeline-item.visited { opacity: 0.5; }
+  .timeline-item .emoji { font-size: 20px; margin-right: 12px; }
+  .timeline-item .content { flex: 1; }
+  .timeline-item .title { font-size: 15px; font-weight: 500; }
+  .timeline-item .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .monogram {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+  }
+  .monogram.z { background: #E8DFD0; color: #A08B6A; }
+  .monogram.b { background: #D4DEE8; color: #5B8FC9; }
+
+  /* ===== MOMENT CARD ===== */
+  .moment-card {
+    background: var(--card); border-radius: 12px;
+    padding: 16px; margin: 0 20px 8px;
+  }
+  .moment-card .mood { font-size: 28px; margin-bottom: 8px; }
+  .moment-card .note { font-size: 15px; line-height: 22px; margin-bottom: 12px; }
+  .moment-card .footer {
+    display: flex; align-items: center;
+    justify-content: flex-end; gap: 8px;
+  }
+  .moment-card .time { font-size: 12px; color: var(--muted); }
+
+  /* ===== EMPTY MOODS ===== */
+  .empty-moods {
+    display: flex; gap: 12px; margin-bottom: 16px; justify-content: center;
+  }
+  .empty-mood-btn {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--card); border: none;
+    font-size: 26px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .empty-hint { font-size: 14px; color: var(--muted); }
+
+  /* ===== EXPENSE ITEM ===== */
+  .expense-item {
+    display: flex; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .expense-item .emoji { font-size: 20px; margin-right: 12px; }
+  .expense-item .content { flex: 1; }
+  .expense-item .title { font-size: 15px; font-weight: 500; }
+  .expense-item .expense-meta {
+    display: flex; align-items: center; gap: 6px; margin-top: 4px;
+  }
+  .expense-item .expense-meta span { font-size: 12px; color: var(--muted); }
+  .expense-item .amount { font-size: 15px; font-weight: 600; margin-left: 8px; }
+
+  /* ===== SUMMARY CARD ===== */
+  .summary-card {
+    background: var(--card); margin: 20px;
+    border-radius: 12px; padding: 20px;
+  }
+  .summary-card .label { margin-bottom: 8px; }
+  .summary-card .total { font-size: 28px; font-weight: 700; }
+  .per-person-row { display: flex; gap: 16px; margin-top: 16px; }
+  .per-person { flex: 1; }
+  .per-person .name { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .per-person .amt { font-size: 15px; font-weight: 600; }
+
+  /* ===== DEBT SECTION ===== */
+  .debt-section {
+    margin: 8px 20px 20px; background: #FFF5F5;
+    border-radius: 12px; padding: 16px;
+  }
+  .debt-section .debt-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .debt-row {
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 6px 0;
+  }
+  .debt-row .debt-amount { font-size: 14px; font-weight: 600; color: var(--danger); }
+
+  /* ===== COUNTDOWN ===== */
+  .countdown { padding: 12px 20px; font-size: 14px; font-weight: 600; color: var(--accent); }
+
+  /* ===== TEXTAREA ===== */
+  textarea.input { min-height: 100px; resize: none; }
+  .char-count { font-size: 12px; color: var(--muted); text-align: right; margin: -8px 0 12px; }
+
+  .currency-row { display: flex; gap: 4px; flex-wrap: wrap; width: 120px; }
+  .currency-btn {
+    padding: 8px 10px; border-radius: 8px;
+    background: var(--card); border: none;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: inherit;
+  }
+  .currency-btn.active { background: var(--dark); color: var(--white); }
+</style>
+</head>
+<body>
+
+<!-- ==================== HOME SCREEN ==================== -->
+<div id="home-screen" class="screen active">
+  <div class="header">
+    <h1>Us & Where</h1>
+    <button class="add-btn" onclick="openSheet('new-trip-sheet')">+</button>
+  </div>
+
+  <div id="trip-list"></div>
+
+  <div id="home-empty" class="empty-state">
+    <div class="emoji">🗺</div>
+    <p>Henüz bir seyahat yok.<br>İlk seyahatinizi oluşturun!</p>
+    <button class="btn-primary" onclick="openSheet('new-trip-sheet')">Yeni Seyahat</button>
+  </div>
+</div>
+
+<!-- ==================== TRIP SCREEN ==================== -->
+<div id="trip-screen" class="screen">
+  <div class="header">
+    <button class="header-back" onclick="goHome()">‹</button>
+    <div class="header-title-row">
+      <h2 id="trip-header-title">Seyahat</h2>
+    </div>
+    <div style="width:40px"></div>
+  </div>
+
+  <!-- Tab content -->
+  <div id="plan-tab" class="tab-content"></div>
+  <div id="moments-tab" class="tab-content" style="display:none"></div>
+  <div id="budget-tab" class="tab-content" style="display:none"></div>
+
+  <!-- FAB -->
+  <button class="fab" id="trip-fab" onclick="onFabClick()">+</button>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab active" data-tab="plan" onclick="switchTab('plan')">
+      <span class="icon">📋</span>Plan
+    </button>
+    <button class="tab" data-tab="moments" onclick="switchTab('moments')">
+      <span class="icon">💭</span>Anılar
+    </button>
+    <button class="tab" data-tab="budget" onclick="switchTab('budget')">
+      <span class="icon">💰</span>Bütçe
+    </button>
+  </div>
+</div>
+
+<!-- ==================== NEW TRIP SHEET ==================== -->
+<div id="new-trip-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('new-trip-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Seyahat</div>
+    <div class="emoji-row" id="trip-emoji-picker"></div>
+    <input class="input" id="trip-title-input" placeholder="Seyahat adı">
+    <div class="row">
+      <input class="input" id="trip-start" placeholder="Başlangıç (YYYY-MM-DD)">
+      <input class="input" id="trip-end" placeholder="Bitiş (YYYY-MM-DD)">
+    </div>
+    <button class="btn-full" onclick="createTrip()">Oluştur</button>
+  </div>
+</div>
+
+<!-- ==================== ADD ITEM SHEET ==================== -->
+<div id="add-item-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-item-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Ekle</div>
+    <div class="toggle-row">
+      <button class="toggle active" id="type-place" onclick="setItemType('place')">📍 Mekan</button>
+      <button class="toggle" id="type-ticket" onclick="setItemType('ticket')">✈️ Bilet</button>
+    </div>
+    <input class="input" id="item-name" placeholder="Mekan adı">
+    <div class="chip-row" id="category-chips"></div>
+    <div class="row">
+      <input class="input" id="item-date" placeholder="Tarih (YYYY-MM-DD)">
+      <input class="input" id="item-time" placeholder="Saat (HH:MM)" style="display:none">
+    </div>
+    <button class="btn-full" onclick="addItem()">Ekle</button>
+  </div>
+</div>
+
+<!-- ==================== ADD MOMENT SHEET ==================== -->
+<div id="add-moment-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-moment-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Anı</div>
+    <div class="mood-row" id="mood-picker" style="justify-content:center"></div>
+    <textarea class="input" id="moment-note" placeholder="Bu anı anlat..." maxlength="280"></textarea>
+    <div class="char-count"><span id="moment-chars">0</span>/280</div>
+    <button class="btn-full" onclick="addMoment()">Kaydet</button>
+  </div>
+</div>
+
+<!-- ==================== ADD EXPENSE SHEET ==================== -->
+<div id="add-expense-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-expense-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Harcama</div>
+    <input class="input" id="expense-title" placeholder="Harcama adı">
+    <div class="row" style="align-items:flex-start">
+      <input class="input" id="expense-amount" placeholder="Tutar" type="number" step="0.01">
+      <div class="currency-row" id="currency-picker"></div>
+    </div>
+    <div class="chip-row" id="expense-category-chips"></div>
+    <div class="label">Ödeyen</div>
+    <div class="toggle-row" id="paid-by-toggle"></div>
+    <div class="label">Bölüşüm</div>
+    <div class="toggle-row">
+      <button class="toggle active" id="split-equal" onclick="setSplit('equal')">Yarı yarıya</button>
+      <button class="toggle" id="split-solo" onclick="setSplit('solo')">Tek kişi</button>
+    </div>
+    <button class="btn-full" onclick="addExpense()">Ekle</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const CURRENT_USER = 'zeynep';
+const PEOPLE = ['zeynep', 'bartu'];
+const TRIP_EMOJIS = ['✈️', '🏖', '🗺', '🚗', '🏔', '🌍', '🛫', '🧳'];
+const MOODS = ['😊', '🥰', '😎', '🤩', '😌'];
+const CATEGORIES = [
+  { key: 'restaurant', label: '🍽 Restoran', emoji: '🍽' },
+  { key: 'cafe', label: '☕ Kafe', emoji: '☕' },
+  { key: 'museum', label: '🏛 Müze', emoji: '🏛' },
+  { key: 'landmark', label: '📍 Gezi', emoji: '📍' },
+  { key: 'shop', label: '🛍 Alışveriş', emoji: '🛍' },
+];
+const EXPENSE_CATS = [
+  { key: 'food', label: '🍽 Yemek', emoji: '🍽' },
+  { key: 'transport', label: '🚕 Ulaşım', emoji: '🚕' },
+  { key: 'stay', label: '🏨 Konaklama', emoji: '🏨' },
+  { key: 'ticket', label: '🎟 Bilet', emoji: '🎟' },
+  { key: 'shopping', label: '🛍 Alışveriş', emoji: '🛍' },
+  { key: 'other', label: '📦 Diğer', emoji: '📦' },
+];
+const CURRENCIES = ['TRY', 'EUR', 'USD', 'GBP'];
+
+let trips = [];
+let currentTrip = null;
+let currentTab = 'plan';
+let items = [];
+let moments = [];
+let expenses = [];
+
+// Form state
+let selectedTripEmoji = '✈️';
+let selectedItemType = 'place';
+let selectedCategory = 'landmark';
+let selectedMood = '😊';
+let selectedExpCat = 'food';
+let selectedCurrency = 'TRY';
+let selectedPaidBy = CURRENT_USER;
+let selectedSplit = 'equal';
+
+// ===== DEMO DATA =====
+function loadDemoData() {
+  trips = [
+    { id: '1', title: 'Roma Tatili', emoji: '🏛', start_date: '2026-04-10', end_date: '2026-04-17', invite_code: 'ABC123', created_by: 'zeynep', created_at: '2026-02-20' },
+    { id: '2', title: 'Kapadokya', emoji: '🎈', start_date: '2026-03-15', end_date: '2026-03-18', invite_code: 'XYZ789', created_by: 'bartu', created_at: '2026-02-18' },
+  ];
+  items = [
+    { id: '1', trip_id: '1', type: 'place', title: 'Colosseum', category: 'landmark', date: '2026-04-11', time: null, status: 'planned', file_url: null, added_by: 'zeynep', created_at: '2026-02-20' },
+    { id: '2', trip_id: '1', type: 'place', title: 'Trastevere Dinner', category: 'restaurant', date: '2026-04-11', time: '20:00', status: 'planned', file_url: null, added_by: 'bartu', created_at: '2026-02-20' },
+    { id: '3', trip_id: '1', type: 'ticket', title: 'IST → FCO Uçuş', category: null, date: '2026-04-10', time: '08:30', status: 'planned', file_url: null, added_by: 'zeynep', created_at: '2026-02-20' },
+    { id: '4', trip_id: '1', type: 'place', title: 'Vatican Müzesi', category: 'museum', date: '2026-04-12', time: '10:00', status: 'planned', file_url: null, added_by: 'zeynep', created_at: '2026-02-20' },
+    { id: '5', trip_id: '1', type: 'place', title: 'Gelato Dükkanı', category: 'cafe', date: null, time: null, status: 'visited', file_url: null, added_by: 'bartu', created_at: '2026-02-20' },
+  ];
+  moments = [
+    { id: '1', trip_id: '1', mood: '🤩', note: 'Colosseum gerçekten inanılmazdı! Fotoğraflar hiç hakkını vermiyor.', added_by: 'zeynep', created_at: '2026-04-11T14:30:00' },
+    { id: '2', trip_id: '1', mood: '🥰', note: 'Trastevere\'de yediğimiz makarna hayatımın en iyisiydi.', added_by: 'bartu', created_at: '2026-04-11T21:15:00' },
+    { id: '3', trip_id: '1', mood: '😎', note: 'Vatican kuyruğu uzundu ama değdi!', added_by: 'zeynep', created_at: '2026-04-12T16:00:00' },
+  ];
+  expenses = [
+    { id: '1', trip_id: '1', title: 'Uçak bileti', amount: 4200, currency: 'TRY', category: 'transport', paid_by: 'zeynep', split: 'equal', added_by: 'zeynep', created_at: '2026-02-20' },
+    { id: '2', trip_id: '1', title: 'Otel (3 gece)', amount: 450, currency: 'EUR', category: 'stay', paid_by: 'bartu', split: 'equal', added_by: 'bartu', created_at: '2026-02-20' },
+    { id: '3', trip_id: '1', title: 'Trastevere Akşam Yemeği', amount: 85, currency: 'EUR', category: 'food', paid_by: 'zeynep', split: 'equal', added_by: 'zeynep', created_at: '2026-04-11' },
+    { id: '4', trip_id: '1', title: 'Hediyelik eşya', amount: 40, currency: 'EUR', category: 'shopping', paid_by: 'bartu', split: 'solo', added_by: 'bartu', created_at: '2026-04-12' },
+  ];
+}
+
+// ===== NAVIGATION =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  currentTrip = null;
+  showScreen('home-screen');
+  renderHome();
+}
+
+function openTrip(tripId) {
+  currentTrip = trips.find(t => t.id === tripId);
+  document.getElementById('trip-header-title').textContent = `${currentTrip.emoji} ${currentTrip.title}`;
+  showScreen('trip-screen');
+  switchTab('plan');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  document.getElementById(`${tab}-tab`).style.display = 'block';
+
+  if (tab === 'plan') renderPlan();
+  if (tab === 'moments') renderMoments();
+  if (tab === 'budget') renderBudget();
+}
+
+function onFabClick() {
+  if (currentTab === 'plan') openSheet('add-item-sheet');
+  if (currentTab === 'moments') openSheet('add-moment-sheet');
+  if (currentTab === 'budget') openSheet('add-expense-sheet');
+}
+
+// ===== SHEETS =====
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+
+// ===== MONOGRAM =====
+function monogramHTML(name, size = 24) {
+  const letter = name.charAt(0).toUpperCase();
+  const cls = name.toLowerCase() === 'zeynep' ? 'z' : 'b';
+  return `<div class="monogram ${cls}" style="width:${size}px;height:${size}px;font-size:${size*0.45}px">${letter}</div>`;
+}
+
+// ===== RENDER HOME =====
+function renderHome() {
+  const list = document.getElementById('trip-list');
+  const empty = document.getElementById('home-empty');
+
+  if (trips.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'flex';
+    return;
+  }
+
+  empty.style.display = 'none';
+  list.innerHTML = trips.map(t => {
+    const dateStr = t.start_date
+      ? formatDateRange(t.start_date, t.end_date)
+      : 'Tarih belirlenmedi';
+    return `<div class="trip-card" onclick="openTrip('${t.id}')">
+      <div class="emoji">${t.emoji}</div>
+      <div>
+        <div class="title">${t.title}</div>
+        <div class="subtitle">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatDateRange(start, end) {
+  const s = new Date(start);
+  const sm = s.toLocaleString('tr-TR', { month: 'short' });
+  const startStr = `${s.getDate()} ${sm}`;
+  if (!end) return startStr;
+  const e = new Date(end);
+  const em = e.toLocaleString('tr-TR', { month: 'short' });
+  return `${startStr} – ${e.getDate()} ${em}`;
+}
+
+// ===== RENDER PLAN =====
+function renderPlan() {
+  const tripItems = items.filter(i => i.trip_id === currentTrip.id);
+  const container = document.getElementById('plan-tab');
+
+  if (tripItems.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="emoji">📋</div>
+      <p>Henüz plan yok. İlk noktayı ekleyin!</p>
+      <button class="btn-primary" onclick="openSheet('add-item-sheet')">Ekle</button>
+    </div>`;
+    return;
+  }
+
+  // Countdown
+  let countdown = '';
+  if (currentTrip.start_date) {
+    const diff = Math.ceil((new Date(currentTrip.start_date) - new Date()) / 86400000);
+    if (diff > 0) countdown = `<div class="countdown">${diff} gün kaldı</div>`;
+    else if (diff === 0) countdown = `<div class="countdown">Bugün! 🎉</div>`;
+  }
+
+  // Group by date
+  const dated = {};
+  const undated = [];
+  tripItems.forEach(item => {
+    if (item.date) {
+      if (!dated[item.date]) dated[item.date] = [];
+      dated[item.date].push(item);
+    } else {
+      undated.push(item);
+    }
+  });
+
+  let html = countdown;
+  Object.keys(dated).sort().forEach(date => {
+    const d = new Date(date);
+    html += `<div class="section-header">${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'long' })}</div>`;
+    dated[date].forEach(item => { html += timelineItemHTML(item); });
+  });
+  if (undated.length > 0) {
+    html += `<div class="section-header">Tarihsiz</div>`;
+    undated.forEach(item => { html += timelineItemHTML(item); });
+  }
+
+  container.innerHTML = html;
+}
+
+function timelineItemHTML(item) {
+  const catEmojis = { restaurant: '🍽', cafe: '☕', museum: '🏛', landmark: '📍', shop: '🛍' };
+  const emoji = item.type === 'ticket' ? '✈' : (catEmojis[item.category] || '📍');
+  const visited = item.status === 'visited';
+  return `<div class="timeline-item ${visited ? 'visited' : ''}">
+    <div class="emoji">${emoji}</div>
+    <div class="content">
+      <div class="title">${visited ? '✓ ' : ''}${item.title}</div>
+      ${item.time ? `<div class="meta">${item.time.slice(0,5)}</div>` : ''}
+    </div>
+    ${monogramHTML(item.added_by)}
+  </div>`;
+}
+
+// ===== RENDER MOMENTS =====
+function renderMoments() {
+  const tripMoments = moments.filter(m => m.trip_id === currentTrip.id);
+  const container = document.getElementById('moments-tab');
+
+  if (tripMoments.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div style="font-size:18px;font-weight:600;margin-bottom:24px">Nasıl hissediyorsun?</div>
+      <div class="empty-moods">
+        ${MOODS.map(m => `<button class="empty-mood-btn" onclick="selectedMood='${m}';openSheet('add-moment-sheet')">${m}</button>`).join('')}
+      </div>
+      <div class="empty-hint">Bir emoji seç ve anını yaz</div>
+    </div>`;
+    return;
+  }
+
+  // Group by date
+  const grouped = {};
+  tripMoments.forEach(m => {
+    const d = new Date(m.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(m);
+  });
+
+  let html = '';
+  Object.keys(grouped).sort().reverse().forEach(key => {
+    const d = new Date(key);
+    html += `<div class="section-header">${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'long' })}</div>`;
+    grouped[key].forEach(m => {
+      const time = new Date(m.created_at);
+      const timeStr = `${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
+      html += `<div class="moment-card">
+        <div class="mood">${m.mood}</div>
+        <div class="note">${m.note}</div>
+        <div class="footer">
+          ${monogramHTML(m.added_by, 20)}
+          <span class="time">${timeStr}</span>
+        </div>
+      </div>`;
+    });
+  });
+
+  container.innerHTML = html;
+}
+
+// ===== RENDER BUDGET =====
+function renderBudget() {
+  const tripExpenses = expenses.filter(e => e.trip_id === currentTrip.id);
+  const container = document.getElementById('budget-tab');
+
+  if (tripExpenses.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="emoji">💰</div>
+      <p>Henüz harcama yok. İlk harcamayı ekleyin!</p>
+      <button class="btn-primary" onclick="openSheet('add-expense-sheet')">Ekle</button>
+    </div>`;
+    return;
+  }
+
+  // Calculate totals
+  const totals = {};
+  const perPerson = {};
+  tripExpenses.forEach(e => {
+    totals[e.currency] = (totals[e.currency] || 0) + e.amount;
+    if (!perPerson[e.paid_by]) perPerson[e.paid_by] = {};
+    perPerson[e.paid_by][e.currency] = (perPerson[e.paid_by][e.currency] || 0) + e.amount;
+  });
+
+  // Debts
+  const debts = [];
+  const byCurrency = {};
+  tripExpenses.filter(e => e.split === 'equal').forEach(e => {
+    if (!byCurrency[e.currency]) byCurrency[e.currency] = [];
+    byCurrency[e.currency].push(e);
+  });
+  Object.entries(byCurrency).forEach(([cur, items]) => {
+    const paid = {};
+    PEOPLE.forEach(p => paid[p] = 0);
+    items.forEach(e => paid[e.paid_by] += e.amount);
+    const totalShared = items.reduce((s, e) => s + e.amount, 0);
+    const perHead = totalShared / PEOPLE.length;
+    PEOPLE.forEach(person => {
+      const diff = paid[person] - perHead;
+      if (diff < -0.01) {
+        const creditor = PEOPLE.find(p => p !== person && paid[p] > perHead);
+        if (creditor) debts.push({ from: person, to: creditor, amount: Math.abs(diff), currency: cur });
+      }
+    });
+  });
+
+  const catEmojis = { food: '🍽', transport: '🚕', stay: '🏨', ticket: '🎟', shopping: '🛍', other: '📦' };
+
+  let html = `<div class="summary-card">
+    <div class="label">TOPLAM HARCAMA</div>
+    ${Object.entries(totals).map(([c,a]) => `<div class="total">${a.toFixed(2)} ${c}</div>`).join('')}
+    <div class="per-person-row">
+      ${PEOPLE.map(p => `<div class="per-person">
+        <div class="name">${p.charAt(0).toUpperCase()+p.slice(1)}</div>
+        ${perPerson[p] ? Object.entries(perPerson[p]).map(([c,a]) => `<div class="amt">${a.toFixed(2)} ${c}</div>`).join('') : '<div class="amt">0.00</div>'}
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  tripExpenses.forEach(e => {
+    html += `<div class="expense-item">
+      <div class="emoji">${catEmojis[e.category] || '📦'}</div>
+      <div class="content">
+        <div class="title">${e.title}</div>
+        <div class="expense-meta">
+          ${monogramHTML(e.paid_by, 18)}
+          <span>${e.paid_by} ödedi · ${e.split === 'equal' ? 'Yarı yarıya' : 'Tek kişi'}</span>
+        </div>
+      </div>
+      <div class="amount">${e.amount.toFixed(2)} ${e.currency}</div>
+    </div>`;
+  });
+
+  if (debts.length > 0) {
+    html += `<div class="debt-section">
+      <div class="debt-title">Borç Durumu</div>
+      ${debts.map(d => `<div class="debt-row">
+        <span>${d.from.charAt(0).toUpperCase()+d.from.slice(1)} → ${d.to.charAt(0).toUpperCase()+d.to.slice(1)}</span>
+        <span class="debt-amount">${d.amount.toFixed(2)} ${d.currency}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ===== INIT PICKERS =====
+function initPickers() {
+  // Trip emoji picker
+  document.getElementById('trip-emoji-picker').innerHTML = TRIP_EMOJIS.map(e =>
+    `<div class="emoji-option ${e === selectedTripEmoji ? 'selected' : ''}" onclick="selectTripEmoji(this,'${e}')">${e}</div>`
+  ).join('');
+
+  // Category chips
+  document.getElementById('category-chips').innerHTML = CATEGORIES.map(c =>
+    `<button class="chip ${c.key === selectedCategory ? 'active' : ''}" onclick="selectCategory(this,'${c.key}')">${c.label}</button>`
+  ).join('');
+
+  // Mood picker
+  document.getElementById('mood-picker').innerHTML = MOODS.map(m =>
+    `<div class="mood-option ${m === selectedMood ? 'selected' : ''}" onclick="selectMood(this,'${m}')">${m}</div>`
+  ).join('');
+
+  // Expense category
+  document.getElementById('expense-category-chips').innerHTML = EXPENSE_CATS.map(c =>
+    `<button class="chip ${c.key === selectedExpCat ? 'active' : ''}" onclick="selectExpCat(this,'${c.key}')">${c.label}</button>`
+  ).join('');
+
+  // Currency picker
+  document.getElementById('currency-picker').innerHTML = CURRENCIES.map(c =>
+    `<button class="currency-btn ${c === selectedCurrency ? 'active' : ''}" onclick="selectCurrency(this,'${c}')">${c}</button>`
+  ).join('');
+
+  // Paid by
+  document.getElementById('paid-by-toggle').innerHTML = PEOPLE.map(p =>
+    `<button class="toggle ${p === selectedPaidBy ? 'active' : ''}" onclick="selectPaidBy(this,'${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`
+  ).join('');
+
+  // Moment char count
+  document.getElementById('moment-note').addEventListener('input', function() {
+    document.getElementById('moment-chars').textContent = this.value.length;
+  });
+}
+
+// ===== SELECTION HANDLERS =====
+function selectTripEmoji(el, e) {
+  selectedTripEmoji = e;
+  el.parentElement.querySelectorAll('.emoji-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectCategory(el, key) {
+  selectedCategory = key;
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectMood(el, m) {
+  selectedMood = m;
+  el.parentElement.querySelectorAll('.mood-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectExpCat(el, key) {
+  selectedExpCat = key;
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectCurrency(el, c) {
+  selectedCurrency = c;
+  el.parentElement.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectPaidBy(el, p) {
+  selectedPaidBy = p;
+  el.parentElement.querySelectorAll('.toggle').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+function setItemType(type) {
+  selectedItemType = type;
+  document.getElementById('type-place').classList.toggle('active', type === 'place');
+  document.getElementById('type-ticket').classList.toggle('active', type === 'ticket');
+  document.getElementById('item-name').placeholder = type === 'place' ? 'Mekan adı' : 'Bilet adı';
+  document.getElementById('item-time').style.display = type === 'ticket' ? 'block' : 'none';
+  document.getElementById('category-chips').style.display = type === 'place' ? 'flex' : 'none';
+}
+function setSplit(s) {
+  selectedSplit = s;
+  document.getElementById('split-equal').classList.toggle('active', s === 'equal');
+  document.getElementById('split-solo').classList.toggle('active', s === 'solo');
+}
+
+// ===== CRUD =====
+function createTrip() {
+  const title = document.getElementById('trip-title-input').value.trim();
+  if (!title) return;
+  const trip = {
+    id: Date.now().toString(),
+    title,
+    emoji: selectedTripEmoji,
+    start_date: document.getElementById('trip-start').value || null,
+    end_date: document.getElementById('trip-end').value || null,
+    invite_code: Math.random().toString(36).slice(2,8).toUpperCase(),
+    created_by: CURRENT_USER,
+    created_at: new Date().toISOString(),
+  };
+  trips.unshift(trip);
+  closeSheet('new-trip-sheet');
+  document.getElementById('trip-title-input').value = '';
+  document.getElementById('trip-start').value = '';
+  document.getElementById('trip-end').value = '';
+  openTrip(trip.id);
+}
+
+function addItem() {
+  const name = document.getElementById('item-name').value.trim();
+  if (!name) return;
+  items.push({
+    id: Date.now().toString(),
+    trip_id: currentTrip.id,
+    type: selectedItemType,
+    title: name,
+    category: selectedItemType === 'place' ? selectedCategory : null,
+    date: document.getElementById('item-date').value || null,
+    time: document.getElementById('item-time').value || null,
+    status: 'planned',
+    file_url: null,
+    added_by: CURRENT_USER,
+    created_at: new Date().toISOString(),
+  });
+  closeSheet('add-item-sheet');
+  document.getElementById('item-name').value = '';
+  document.getElementById('item-date').value = '';
+  document.getElementById('item-time').value = '';
+  renderPlan();
+}
+
+function addMoment() {
+  const note = document.getElementById('moment-note').value.trim();
+  if (!note) return;
+  moments.push({
+    id: Date.now().toString(),
+    trip_id: currentTrip.id,
+    mood: selectedMood,
+    note,
+    added_by: CURRENT_USER,
+    created_at: new Date().toISOString(),
+  });
+  closeSheet('add-moment-sheet');
+  document.getElementById('moment-note').value = '';
+  document.getElementById('moment-chars').textContent = '0';
+  renderMoments();
+}
+
+function addExpense() {
+  const title = document.getElementById('expense-title').value.trim();
+  const amount = parseFloat(document.getElementById('expense-amount').value);
+  if (!title || isNaN(amount)) return;
+  expenses.push({
+    id: Date.now().toString(),
+    trip_id: currentTrip.id,
+    title,
+    amount,
+    currency: selectedCurrency,
+    category: selectedExpCat,
+    paid_by: selectedPaidBy,
+    split: selectedSplit,
+    added_by: CURRENT_USER,
+    created_at: new Date().toISOString(),
+  });
+  closeSheet('add-expense-sheet');
+  document.getElementById('expense-title').value = '';
+  document.getElementById('expense-amount').value = '';
+  renderBudget();
+}
+
+// ===== LOCAL STORAGE PERSISTENCE =====
+function saveData() {
+  localStorage.setItem('uw_trips', JSON.stringify(trips));
+  localStorage.setItem('uw_items', JSON.stringify(items));
+  localStorage.setItem('uw_moments', JSON.stringify(moments));
+  localStorage.setItem('uw_expenses', JSON.stringify(expenses));
+}
+
+function loadData() {
+  const t = localStorage.getItem('uw_trips');
+  if (t) {
+    trips = JSON.parse(t);
+    items = JSON.parse(localStorage.getItem('uw_items') || '[]');
+    moments = JSON.parse(localStorage.getItem('uw_moments') || '[]');
+    expenses = JSON.parse(localStorage.getItem('uw_expenses') || '[]');
+    return true;
+  }
+  return false;
+}
+
+// Wrap CRUD to auto-save
+const _createTrip = createTrip;
+createTrip = function() { _createTrip(); saveData(); };
+const _addItem = addItem;
+addItem = function() { _addItem(); saveData(); };
+const _addMoment = addMoment;
+addMoment = function() { _addMoment(); saveData(); };
+const _addExpense = addExpense;
+addExpense = function() { _addExpense(); saveData(); };
+
+// ===== SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ===== START =====
+if (!loadData()) loadDemoData();
+initPickers();
+renderHome();
+</script>
+</body>
+</html>

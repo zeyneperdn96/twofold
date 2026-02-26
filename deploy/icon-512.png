@@ -1,0 +1,5 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512'>
+<rect width='512' height='512' rx='102' fill='#1C1C1E'/>
+<text x='256' y='192' text-anchor='middle' font-size='204'>🗺️</text>
+<text x='256' y='369' text-anchor='middle' font-family='sans-serif' font-weight='bold' font-size='46' fill='white'>Us &amp; Where</text>
+</svg>
