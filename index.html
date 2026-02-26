@@ -34,6 +34,51 @@
     --safe-bottom:env(safe-area-inset-bottom,0px);
   }
 
+  [data-theme="dark"]{
+    --bg:#1A1A2E;
+    --card:#252540;
+    --dark:#E8E8E8;
+    --muted:#8888A0;
+    --accent:#5BBFAD;
+    --accent-light:#1E3A35;
+    --accent-dark:#7DD8C8;
+    --white:#252540;
+    --border:#333355;
+    --warm:#2A2A44;
+    --danger:#E85D5D;
+  }
+  [data-theme="dark"] .splash{background:#1A1A2E}
+  [data-theme="dark"] .profile-select{background:#1A1A2E}
+  [data-theme="dark"] .confirm-box{background:#252540}
+  [data-theme="dark"] .sheet{background:#252540}
+  [data-theme="dark"] .swipe-card{background:#252540;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  [data-theme="dark"] .money-total .currency{color:#8888A0}
+  [data-theme="dark"] .moment-card.m-happy{border-left-color:#66BB6A;background:linear-gradient(135deg,#1e2e1e,#252540)}
+  [data-theme="dark"] .moment-card.m-love{border-left-color:#EC407A;background:linear-gradient(135deg,#2e1e24,#252540)}
+  [data-theme="dark"] .moment-card.m-cool{border-left-color:#42A5F5;background:linear-gradient(135deg,#1e222e,#252540)}
+  [data-theme="dark"] .moment-card.m-star{border-left-color:#FFA726;background:linear-gradient(135deg,#2e271e,#252540)}
+  [data-theme="dark"] .moment-card.m-calm{border-left-color:#AB47BC;background:linear-gradient(135deg,#261e2e,#252540)}
+  [data-theme="dark"] .moment-card .m-note{color:#ccc}
+  [data-theme="dark"] .swipe-card .card-desc{color:#aaa}
+  [data-theme="dark"] .loc-thumb.landmark{background:linear-gradient(135deg,#3a2030,#4a2848)}
+  [data-theme="dark"] .loc-thumb.restaurant{background:linear-gradient(135deg,#3a3020,#4a3828)}
+  [data-theme="dark"] .loc-thumb.cafe{background:linear-gradient(135deg,#2e2a26,#3a3430)}
+  [data-theme="dark"] .loc-thumb.museum{background:linear-gradient(135deg,#20243a,#282e4a)}
+  [data-theme="dark"] .loc-thumb.shop{background:linear-gradient(135deg,#30203a,#3a2848)}
+  [data-theme="dark"] .loc-thumb.ticket{background:linear-gradient(135deg,#203a38,#204a46)}
+  [data-theme="dark"] .loc-thumb.default{background:linear-gradient(135deg,#1E3A35,#1a3028)}
+  html.theme-transition,html.theme-transition *,html.theme-transition *::before,html.theme-transition *::after{
+    transition:background .3s ease,color .3s ease,border-color .3s ease,box-shadow .3s ease!important;
+  }
+
+  .theme-toggle{
+    width:36px;height:36px;border-radius:50%;
+    background:var(--warm);border:none;color:var(--dark);
+    font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s;flex-shrink:0;
+  }
+  .theme-toggle:active{background:var(--border)}
+
   body{
     font-family:'Nunito',-apple-system,sans-serif;
     background:var(--bg);color:var(--dark);
@@ -671,6 +716,66 @@
     cursor:pointer;transition:all .2s;color:var(--muted);
   }
   .vibemap-sub-btn.active{background:var(--card);color:var(--dark);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+  /* ===== TOAST ===== */
+  .toast-container{
+    position:fixed;top:calc(12px + var(--safe-top));
+    left:50%;transform:translateX(-50%);
+    width:100%;max-width:400px;padding:0 16px;
+    z-index:9999;pointer-events:none;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .toast{
+    background:var(--card);border-radius:14px;
+    padding:12px 16px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 4px 20px rgba(0,0,0,.15);
+    pointer-events:auto;
+    animation:toastIn .35s cubic-bezier(.32,.72,0,1) forwards;
+  }
+  .toast.removing{animation:toastOut .3s ease forwards}
+  .toast-avatar{
+    width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;flex-shrink:0;overflow:hidden;
+  }
+  .toast-avatar img{width:100%;height:100%;object-fit:cover;object-position:top;border-radius:50%}
+  .toast-msg{font-size:13px;font-weight:600;color:var(--dark);flex:1}
+  @keyframes toastIn{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-20px);opacity:0}}
+
+  /* ===== WISHLIST ===== */
+  .wish-grid{display:flex;flex-wrap:wrap;gap:10px;padding-top:12px}
+  .wish-card{
+    width:calc(50% - 5px);background:var(--card);border-radius:16px;
+    padding:16px;text-align:center;position:relative;
+    box-shadow:0 1px 6px rgba(0,0,0,.04);
+    transition:transform .15s,opacity .2s;cursor:pointer;
+  }
+  .wish-card:active{transform:scale(.96)}
+  .wish-card.done{opacity:.5}
+  .wish-card.done .wish-text{text-decoration:line-through}
+  .wish-emoji{font-size:32px;margin-bottom:6px}
+  .wish-text{font-size:13px;font-weight:600;line-height:18px}
+  .wish-check{
+    position:absolute;top:8px;right:8px;
+    width:22px;height:22px;border-radius:50%;
+    border:2px solid var(--border);background:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:transparent;cursor:pointer;transition:all .15s;
+  }
+  .wish-check.checked{background:var(--accent);border-color:var(--accent);color:white}
+  .wish-delete{
+    position:absolute;top:8px;left:8px;
+    width:22px;height:22px;border-radius:50%;
+    background:none;border:none;color:var(--muted);
+    font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .wish-card:hover .wish-delete,.wish-card:active .wish-delete{opacity:1}
+  .wish-sec-header{
+    width:100%;font-size:11px;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.5px;padding:14px 0 2px;
+  }
 </style>
 </head>
 <body>
@@ -695,18 +800,26 @@
   </div>
 </div>
 
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
 <!-- PROFILE SELECT -->
 <div class="profile-select" id="profile-select">
   <div class="profile-select-logo"><img src="assets/logo.png" alt="TwoFold"></div>
   <div class="profile-select-title">Kim giriyor?</div>
   <div id="profile-cards"></div>
+  <button class="theme-toggle" id="theme-toggle-profile" onclick="toggleTheme()" style="margin-top:20px">🌙</button>
 </div>
 
 <!-- ===== HOME ===== -->
 <div id="home-screen" class="screen home-screen">
   <div class="home-header">
     <h1>TwoFold ✈️</h1>
-    <button class="add-trip-btn" onclick="openSheet('new-trip-sheet')">+</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="theme-toggle" id="theme-toggle-home" onclick="toggleTheme()">🌙</button>
+      <button class="theme-toggle" onclick="openWishlist()">💫</button>
+      <button class="add-trip-btn" onclick="openSheet('new-trip-sheet')">+</button>
+    </div>
   </div>
   <div class="trip-list" id="trip-list"></div>
   <div id="home-empty" class="empty-state" style="display:none">
@@ -821,6 +934,32 @@
     <div class="sheet-title">Bavula Ekle 🧳</div>
     <input class="input" id="pack-item-input" placeholder="Ne ekliyorsun?">
     <button class="btn-full" onclick="addPackItem()">Ekle</button>
+  </div>
+</div>
+
+<!-- WISHLIST SCREEN -->
+<div id="wishlist-screen" class="screen">
+  <div class="greet-header">
+    <button class="greet-back" onclick="closeWishlist()">‹</button>
+    <div class="section-title">Bucket List 💫</div>
+    <div style="width:36px"></div>
+  </div>
+  <div id="wishlist-content" style="padding:0 20px 100px"></div>
+  <button class="fab" id="wish-fab" onclick="openSheet('add-wish-sheet')">
+    <span class="fab-icon">+</span>
+  </button>
+</div>
+
+<!-- WISHLIST SHEET -->
+<div id="add-wish-sheet" class="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('add-wish-sheet')"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Yeni Dilek 💫</div>
+    <div class="form-label">Emoji Seç</div>
+    <div class="emoji-row" id="wish-emoji-picker"></div>
+    <input class="input" id="wish-text-input" placeholder="Nereye gitmek istiyorsunuz?">
+    <button class="btn-full" onclick="addWishItem()">Ekle</button>
   </div>
 </div>
 
@@ -1851,13 +1990,31 @@ async function loadFromCloud(){
 }
 
 // Realtime subscriptions
+function handleRealtimeChange(payload,table){
+  const row=payload.new||payload.old||{};
+  const who=row.added_by||row.created_by||row.paid_by||null;
+  if(who&&who!==CURRENT_USER){
+    const person=PEOPLE.find(p=>p.name===who);
+    const name=person?(person.name.charAt(0).toUpperCase()+person.name.slice(1)):who;
+    const msgs={
+      trips:{INSERT:`${name} yeni seyahat ekledi!`,UPDATE:`${name} seyahati güncelledi`,DELETE:`${name} bir seyahat sildi`},
+      items:{INSERT:`${name} yeni mekan ekledi!`,UPDATE:`${name} mekanı güncelledi`,DELETE:`${name} bir mekan sildi`},
+      moments:{INSERT:`${name} yeni anı ekledi!`,UPDATE:`${name} anıyı güncelledi`,DELETE:`${name} bir anı sildi`},
+      expenses:{INSERT:`${name} yeni harcama ekledi!`,UPDATE:`${name} harcamayı güncelledi`,DELETE:`${name} bir harcama sildi`},
+      pack_items:{INSERT:`${name} bavula ekledi!`,UPDATE:`${name} bavulu güncelledi`,DELETE:`${name} bavuldan çıkardı`}
+    };
+    const msg=(msgs[table]&&msgs[table][payload.eventType])||`${name} bir şey değiştirdi`;
+    showToast(msg,who);
+  }
+  refreshFromCloud();
+}
 function startRealtime(){
   sb.channel('sync')
-    .on('postgres_changes',{event:'*',schema:'public',table:'trips'},()=>refreshFromCloud())
-    .on('postgres_changes',{event:'*',schema:'public',table:'items'},()=>refreshFromCloud())
-    .on('postgres_changes',{event:'*',schema:'public',table:'moments'},()=>refreshFromCloud())
-    .on('postgres_changes',{event:'*',schema:'public',table:'expenses'},()=>refreshFromCloud())
-    .on('postgres_changes',{event:'*',schema:'public',table:'pack_items'},()=>refreshFromCloud())
+    .on('postgres_changes',{event:'*',schema:'public',table:'trips'},(p)=>handleRealtimeChange(p,'trips'))
+    .on('postgres_changes',{event:'*',schema:'public',table:'items'},(p)=>handleRealtimeChange(p,'items'))
+    .on('postgres_changes',{event:'*',schema:'public',table:'moments'},(p)=>handleRealtimeChange(p,'moments'))
+    .on('postgres_changes',{event:'*',schema:'public',table:'expenses'},(p)=>handleRealtimeChange(p,'expenses'))
+    .on('postgres_changes',{event:'*',schema:'public',table:'pack_items'},(p)=>handleRealtimeChange(p,'pack_items'))
     .subscribe();
 }
 
@@ -1896,6 +2053,137 @@ async function syncToCloud(){
   }catch(e){console.log('Sync error',e);}
 }
 
+// ===== DARK MODE =====
+function initTheme(){
+  const saved=localStorage.getItem('tf_theme');
+  if(saved==='dark')document.documentElement.setAttribute('data-theme','dark');
+  updateThemeIcons();
+}
+function toggleTheme(){
+  document.documentElement.classList.add('theme-transition');
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  if(isDark){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('tf_theme','light');
+    document.querySelector('meta[name="theme-color"]').content='#F7F6F2';
+  }else{
+    document.documentElement.setAttribute('data-theme','dark');
+    localStorage.setItem('tf_theme','dark');
+    document.querySelector('meta[name="theme-color"]').content='#1A1A2E';
+  }
+  updateThemeIcons();
+  setTimeout(()=>document.documentElement.classList.remove('theme-transition'),350);
+}
+function updateThemeIcons(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const icon=isDark?'☀️':'🌙';
+  const tp=document.getElementById('theme-toggle-profile');
+  const th=document.getElementById('theme-toggle-home');
+  if(tp)tp.textContent=icon;
+  if(th)th.textContent=icon;
+}
+initTheme();
+
+// ===== TOAST NOTIFICATIONS =====
+function showToast(message,userName){
+  const container=document.getElementById('toast-container');
+  const person=PEOPLE.find(p=>p.name===userName)||PEOPLE[0];
+  const avatarInner=person.avatar?`<img src="${person.avatar}" alt="${person.name}">`:`${person.initial}`;
+  const toast=document.createElement('div');
+  toast.className='toast';
+  toast.innerHTML=`
+    <div class="toast-avatar" style="background:${person.color};color:${person.textColor}">${avatarInner}</div>
+    <div class="toast-msg">${message}</div>
+  `;
+  container.appendChild(toast);
+  setTimeout(()=>{toast.classList.add('removing');setTimeout(()=>toast.remove(),300)},3000);
+}
+
+// ===== WISHLIST =====
+const WISH_EMOJIS=['🏖','🗼','🏔','🌊','🏛','🎡','🌸','🏕','🎭','🍣','🛕','🌅'];
+let wishItems=[];
+let selectedWishEmoji='🏖';
+
+function loadWishLocal(){
+  const w=localStorage.getItem('tf_wish');
+  if(w)wishItems=JSON.parse(w);
+}
+function saveWishLocal(){
+  localStorage.setItem('tf_wish',JSON.stringify(wishItems));
+}
+function openWishlist(){
+  loadWishLocal();
+  showScreen('wishlist-screen','left');
+  renderWishlist();
+}
+function closeWishlist(){
+  showScreen('home-screen','right');
+}
+function renderWishlist(){
+  const c=document.getElementById('wishlist-content');
+  if(!wishItems.length){
+    c.innerHTML=`<div class="empty-state"><div class="e-icon">💫</div><p>Bucket list boş!<br>Hayalinizdeki yerleri ekleyin.</p><button class="btn-accent" onclick="openSheet('add-wish-sheet')">Ekle</button></div>`;
+    return;
+  }
+  const active=wishItems.filter(w=>!w.done);
+  const done=wishItems.filter(w=>w.done);
+  let h='';
+  if(active.length){
+    h+=`<div class="wish-sec-header">Hayaller (${active.length})</div><div class="wish-grid">`;
+    active.forEach((w,i)=>{
+      h+=`<div class="wish-card si" style="animation-delay:${i*40}ms">
+        <button class="wish-check" onclick="event.stopPropagation();toggleWish('${w.id}')">✓</button>
+        <button class="wish-delete" onclick="event.stopPropagation();deleteWishItem('${w.id}')">✕</button>
+        <div class="wish-emoji">${w.emoji}</div>
+        <div class="wish-text">${w.text}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  if(done.length){
+    h+=`<div class="wish-sec-header">Gidildi! (${done.length})</div><div class="wish-grid">`;
+    done.forEach((w,i)=>{
+      h+=`<div class="wish-card done si" style="animation-delay:${i*40}ms">
+        <button class="wish-check checked" onclick="event.stopPropagation();toggleWish('${w.id}')">✓</button>
+        <button class="wish-delete" onclick="event.stopPropagation();deleteWishItem('${w.id}')">✕</button>
+        <div class="wish-emoji">${w.emoji}</div>
+        <div class="wish-text">${w.text}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  c.innerHTML=h;
+}
+function initWishPicker(){
+  const picker=document.getElementById('wish-emoji-picker');
+  if(!picker)return;
+  picker.innerHTML=WISH_EMOJIS.map(e=>`<div class="emoji-option ${e===selectedWishEmoji?'selected':''}" onclick="selectWishEmoji(this,'${e}')">${e}</div>`).join('');
+}
+function selectWishEmoji(el,e){
+  selectedWishEmoji=e;
+  el.parentElement.querySelectorAll('.emoji-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function addWishItem(){
+  const text=document.getElementById('wish-text-input').value.trim();
+  if(!text)return;
+  wishItems.push({id:Date.now().toString(),emoji:selectedWishEmoji,text,done:false,added_by:CURRENT_USER,created_at:new Date().toISOString()});
+  saveWishLocal();
+  closeSheet('add-wish-sheet');
+  document.getElementById('wish-text-input').value='';
+  renderWishlist();
+}
+function toggleWish(id){
+  const w=wishItems.find(w=>w.id===id);
+  if(w){w.done=!w.done;saveWishLocal();renderWishlist()}
+}
+function deleteWishItem(id){
+  const w=wishItems.find(w=>w.id===id);
+  confirmAction({icon:'💫',title:`"${w?w.text:'Dilek'}" silinsin mi?`,msg:'Bucket list\'ten kalıcı olarak çıkarılacak.'},()=>{
+    wishItems=wishItems.filter(w=>w.id!==id);saveWishLocal();renderWishlist();
+  });
+}
+
 // ===== SW =====
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
@@ -1909,6 +2197,8 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
     syncToCloud();
   }
   initPickers();
+  initWishPicker();
+  loadWishLocal();
   renderProfileSelect();
   startRealtime();
 })();
