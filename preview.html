@@ -1040,7 +1040,8 @@ function deleteTrip(id){
     packItems=packItems.filter(p=>p.trip_id!==id);
     suggestions=suggestions.filter(s=>s.trip_id!==id);
     votes=votes.filter(v=>!suggestions.some(s=>s.id===v.suggestion_id));
-    saveData();
+    saveLocal();
+    sb.from('trips').delete().eq('id',id);
     if(currentTrip&&currentTrip.id===id){currentTrip=null;}
     renderHome();
   });
@@ -1048,19 +1049,25 @@ function deleteTrip(id){
 function deleteItem(id){
   const it=items.find(i=>i.id===id);
   confirmAction({icon:'📍',title:`"${it?it.title:'Öğe'}" silinsin mi?`,msg:'Bu plan kalıcı olarak silinecek.'},()=>{
-    items=items.filter(i=>i.id!==id);saveData();renderPlan();
+    items=items.filter(i=>i.id!==id);saveLocal();
+    sb.from('items').delete().eq('id',id);
+    renderPlan();
   });
 }
 function deleteMoment(id){
   const m=moments.find(m=>m.id===id);
   confirmAction({icon:'💭',title:'Bu anı silinsin mi?',msg:m?`"${m.note.slice(0,40)}${m.note.length>40?'...':''}"`:'Bu işlem geri alınamaz.'},()=>{
-    moments=moments.filter(m=>m.id!==id);saveData();renderPlan();
+    moments=moments.filter(m=>m.id!==id);saveLocal();
+    sb.from('moments').delete().eq('id',id);
+    renderPlan();
   });
 }
 function deleteExpense(id){
   const e=expenses.find(e=>e.id===id);
   confirmAction({icon:'💰',title:`"${e?e.title:'Harcama'}" silinsin mi?`,msg:'Bu harcama kalıcı olarak silinecek.'},()=>{
-    expenses=expenses.filter(e=>e.id!==id);saveData();renderBudget();
+    expenses=expenses.filter(e=>e.id!==id);saveLocal();
+    sb.from('expenses').delete().eq('id',id);
+    renderBudget();
   });
 }
 
@@ -1514,7 +1521,9 @@ function togglePack(id){
 function deletePack(id){
   const p=packItems.find(p=>p.id===id);
   confirmAction({icon:'🧳',title:`"${p?p.text:'Öğe'}" silinsin mi?`,msg:'Bavuldan kalıcı olarak çıkarılacak.'},()=>{
-    packItems=packItems.filter(p=>p.id!==id);saveData();renderPacking();
+    packItems=packItems.filter(p=>p.id!==id);saveLocal();
+    sb.from('pack_items').delete().eq('id',id);
+    renderPacking();
   });
 }
 
@@ -1784,10 +1793,10 @@ async function dbDelete(table,id){
   await sb.from(table).delete().eq('id',id);
 }
 
-// Override create/add functions to sync
+// Override create/add functions to sync to cloud
 const _ct=createTrip;createTrip=function(){
   _ct();saveLocal();
-  const t=trips[trips.length-1];
+  const t=trips[0]; // unshift, so first item
   if(t)dbUpsert('trips',t);
 };
 const _ai=addItem;addItem=function(){
@@ -1805,29 +1814,14 @@ const _ae=addExpense;addExpense=function(){
   const e=expenses[expenses.length-1];
   if(e)dbUpsert('expenses',e);
 };
-
-// Override delete functions to sync
-const _origDeleteItem=deleteItem;
-const _origDeleteExpense=deleteExpense;
-const _origDeleteMoment=deleteMoment;
-const _origDeletePack=deletePack;
-const _origDeleteTrip=deleteTrip;
-
-deleteTrip=function(id){
-  _origDeleteTrip(id);
+// addPackItem already calls saveData, override saveData for it
+const _origAddPack=addPackItem;addPackItem=function(){
+  _origAddPack();
+  const p=packItems[packItems.length-1];
+  if(p)dbUpsert('pack_items',p);
 };
-// Patch confirmOk to also sync deletes
-const _origConfirmOk=confirmOk;
-confirmOk=function(){
-  const cb=_confirmCb;
-  _origConfirmOk();
-  // After confirm, save to local
-  saveLocal();
-};
-
-// Sync pack toggle
-const _origTogglePack=togglePack;
-togglePack=function(id){
+// togglePack sync
+const _origTogglePack=togglePack;togglePack=function(id){
   _origTogglePack(id);
   const p=packItems.find(p=>p.id===id);
   if(p)dbUpsert('pack_items',p);
@@ -1884,13 +1878,8 @@ async function refreshFromCloud(){
   },300);
 }
 
-// Sync saveData calls for deletes
-const _origSaveData=saveData;
-saveData=function(){
-  saveLocal();
-  // Full sync: push current state
-  syncToCloud();
-};
+// saveData = just local (cloud sync is per-action)
+saveData=saveLocal;
 function cleanTrip(t){return{id:t.id,title:t.title,emoji:t.emoji,start_date:t.start_date||null,end_date:t.end_date||null,lat:t.lat||null,lng:t.lng||null,created_by:t.created_by,created_at:t.created_at}}
 function cleanItem(i){return{id:i.id,trip_id:i.trip_id,type:i.type,title:i.title,category:i.category||null,date:i.date||null,time:i.time||null,status:i.status,lat:i.lat||null,lng:i.lng||null,added_by:i.added_by,created_at:i.created_at}}
 function cleanMoment(m){return{id:m.id,trip_id:m.trip_id,mood:m.mood,note:m.note,added_by:m.added_by,created_at:m.created_at}}
