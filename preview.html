@@ -1775,13 +1775,9 @@ async function saveData(){
 }
 
 async function dbUpsert(table,row){
-  const clean={...row};
-  // Remove fields not in DB
-  delete clean.weather;delete clean.city;delete clean.emoji_desc;delete clean.desc;delete clean.emoji;
-  if(table==='trips'){
-    // Keep emoji for trips
-    clean.emoji=row.emoji;
-  }
+  const cleaners={trips:cleanTrip,items:cleanItem,moments:cleanMoment,expenses:cleanExpense,pack_items:cleanPack};
+  const fn=cleaners[table];
+  const clean=fn?fn(row):{...row};
   await sb.from(table).upsert(clean,{onConflict:'id'});
 }
 async function dbDelete(table,id){
@@ -1895,14 +1891,19 @@ saveData=function(){
   // Full sync: push current state
   syncToCloud();
 };
+function cleanTrip(t){return{id:t.id,title:t.title,emoji:t.emoji,start_date:t.start_date||null,end_date:t.end_date||null,lat:t.lat||null,lng:t.lng||null,created_by:t.created_by,created_at:t.created_at}}
+function cleanItem(i){return{id:i.id,trip_id:i.trip_id,type:i.type,title:i.title,category:i.category||null,date:i.date||null,time:i.time||null,status:i.status,lat:i.lat||null,lng:i.lng||null,added_by:i.added_by,created_at:i.created_at}}
+function cleanMoment(m){return{id:m.id,trip_id:m.trip_id,mood:m.mood,note:m.note,added_by:m.added_by,created_at:m.created_at}}
+function cleanExpense(e){return{id:e.id,trip_id:e.trip_id,title:e.title,amount:e.amount,currency:e.currency,category:e.category,paid_by:e.paid_by,split:e.split,added_by:e.added_by,created_at:e.created_at}}
+function cleanPack(p){return{id:p.id,trip_id:p.trip_id,text:p.text,checked:!!p.checked,added_by:p.added_by||null,created_at:p.created_at||null}}
+
 async function syncToCloud(){
   try{
-    // Upsert all current data
-    if(trips.length)await sb.from('trips').upsert(trips.map(t=>{const c={...t};delete c.weather;delete c.city;return c}),{onConflict:'id'});
-    await sb.from('items').upsert(items,{onConflict:'id'}).catch(()=>{});
-    await sb.from('moments').upsert(moments,{onConflict:'id'}).catch(()=>{});
-    await sb.from('expenses').upsert(expenses,{onConflict:'id'}).catch(()=>{});
-    await sb.from('pack_items').upsert(packItems.map(p=>({id:p.id,trip_id:p.trip_id,text:p.text,checked:p.checked,added_by:p.added_by,created_at:p.created_at})),{onConflict:'id'}).catch(()=>{});
+    if(trips.length)await sb.from('trips').upsert(trips.map(cleanTrip),{onConflict:'id'});
+    if(items.length)await sb.from('items').upsert(items.map(cleanItem),{onConflict:'id'});
+    if(moments.length)await sb.from('moments').upsert(moments.map(cleanMoment),{onConflict:'id'});
+    if(expenses.length)await sb.from('expenses').upsert(expenses.map(cleanExpense),{onConflict:'id'});
+    if(packItems.length)await sb.from('pack_items').upsert(packItems.map(cleanPack),{onConflict:'id'});
   }catch(e){console.log('Sync error',e);}
 }
 
