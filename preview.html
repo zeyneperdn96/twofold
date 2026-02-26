@@ -12,6 +12,7 @@
 <title>TwoFold</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
 
@@ -1747,7 +1748,13 @@ function showMatch(sug){
 function hideMatch(){document.getElementById('match-overlay').classList.remove('show')}
 
 // ===== PERSISTENCE =====
-function saveData(){
+// ===== SUPABASE =====
+const SB_URL='https://wjccqjoigejyepgdwqqc.supabase.co';
+const SB_KEY='sb_publishable_TQEXKPskpI-9TsAxVbuwow_mwop-2yq';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+// Local cache save/load (offline fallback)
+function saveLocal(){
   localStorage.setItem('tf_trips',JSON.stringify(trips));
   localStorage.setItem('tf_items',JSON.stringify(items));
   localStorage.setItem('tf_moments',JSON.stringify(moments));
@@ -1756,23 +1763,165 @@ function saveData(){
   localStorage.setItem('tf_suggestions',JSON.stringify(suggestions));
   localStorage.setItem('tf_votes',JSON.stringify(votes));
 }
-function loadData(){
+function loadLocal(){
   const t=localStorage.getItem('tf_trips');
   if(t){trips=JSON.parse(t);items=JSON.parse(localStorage.getItem('tf_items')||'[]');moments=JSON.parse(localStorage.getItem('tf_moments')||'[]');expenses=JSON.parse(localStorage.getItem('tf_expenses')||'[]');packItems=JSON.parse(localStorage.getItem('tf_pack')||'[]');suggestions=JSON.parse(localStorage.getItem('tf_suggestions')||'[]');votes=JSON.parse(localStorage.getItem('tf_votes')||'[]');return true}
   return false;
 }
-const _ct=createTrip;createTrip=function(){_ct();saveData()};
-const _ai=addItem;addItem=function(){_ai();saveData()};
-const _am=addMoment;addMoment=function(){_am();saveData()};
-const _ae=addExpense;addExpense=function(){_ae();saveData()};
+
+// Supabase sync
+async function saveData(){
+  saveLocal();
+}
+
+async function dbUpsert(table,row){
+  const clean={...row};
+  // Remove fields not in DB
+  delete clean.weather;delete clean.city;delete clean.emoji_desc;delete clean.desc;delete clean.emoji;
+  if(table==='trips'){
+    // Keep emoji for trips
+    clean.emoji=row.emoji;
+  }
+  await sb.from(table).upsert(clean,{onConflict:'id'});
+}
+async function dbDelete(table,id){
+  await sb.from(table).delete().eq('id',id);
+}
+
+// Override create/add functions to sync
+const _ct=createTrip;createTrip=function(){
+  _ct();saveLocal();
+  const t=trips[trips.length-1];
+  if(t)dbUpsert('trips',t);
+};
+const _ai=addItem;addItem=function(){
+  _ai();saveLocal();
+  const it=items[items.length-1];
+  if(it)dbUpsert('items',it);
+};
+const _am=addMoment;addMoment=function(){
+  _am();saveLocal();
+  const m=moments[moments.length-1];
+  if(m)dbUpsert('moments',m);
+};
+const _ae=addExpense;addExpense=function(){
+  _ae();saveLocal();
+  const e=expenses[expenses.length-1];
+  if(e)dbUpsert('expenses',e);
+};
+
+// Override delete functions to sync
+const _origDeleteItem=deleteItem;
+const _origDeleteExpense=deleteExpense;
+const _origDeleteMoment=deleteMoment;
+const _origDeletePack=deletePack;
+const _origDeleteTrip=deleteTrip;
+
+deleteTrip=function(id){
+  _origDeleteTrip(id);
+};
+// Patch confirmOk to also sync deletes
+const _origConfirmOk=confirmOk;
+confirmOk=function(){
+  const cb=_confirmCb;
+  _origConfirmOk();
+  // After confirm, save to local
+  saveLocal();
+};
+
+// Sync pack toggle
+const _origTogglePack=togglePack;
+togglePack=function(id){
+  _origTogglePack(id);
+  const p=packItems.find(p=>p.id===id);
+  if(p)dbUpsert('pack_items',p);
+};
+
+// Load from Supabase
+async function loadFromCloud(){
+  try{
+    const [t,i,m,e,p,s,v]=await Promise.all([
+      sb.from('trips').select('*'),
+      sb.from('items').select('*'),
+      sb.from('moments').select('*'),
+      sb.from('expenses').select('*'),
+      sb.from('pack_items').select('*'),
+      sb.from('suggestions').select('*'),
+      sb.from('votes').select('*')
+    ]);
+    if(t.data&&t.data.length>0){
+      trips=t.data;items=i.data||[];moments=m.data||[];
+      expenses=e.data||[];packItems=p.data||[];
+      suggestions=s.data||[];votes=v.data||[];
+      saveLocal();
+      return true;
+    }
+    return false;
+  }catch(e){console.log('Cloud load failed, using local');return false;}
+}
+
+// Realtime subscriptions
+function startRealtime(){
+  sb.channel('sync')
+    .on('postgres_changes',{event:'*',schema:'public',table:'trips'},()=>refreshFromCloud())
+    .on('postgres_changes',{event:'*',schema:'public',table:'items'},()=>refreshFromCloud())
+    .on('postgres_changes',{event:'*',schema:'public',table:'moments'},()=>refreshFromCloud())
+    .on('postgres_changes',{event:'*',schema:'public',table:'expenses'},()=>refreshFromCloud())
+    .on('postgres_changes',{event:'*',schema:'public',table:'pack_items'},()=>refreshFromCloud())
+    .subscribe();
+}
+
+let _refreshTimer=null;
+async function refreshFromCloud(){
+  // Debounce rapid updates
+  clearTimeout(_refreshTimer);
+  _refreshTimer=setTimeout(async()=>{
+    await loadFromCloud();
+    // Re-render current view
+    if(currentTrip){
+      currentTrip=trips.find(t=>t.id===currentTrip.id)||null;
+      if(currentTrip)renderCurrentView();
+      else{currentTrip=null;renderHome();}
+    }else{
+      renderHome();
+    }
+  },300);
+}
+
+// Sync saveData calls for deletes
+const _origSaveData=saveData;
+saveData=function(){
+  saveLocal();
+  // Full sync: push current state
+  syncToCloud();
+};
+async function syncToCloud(){
+  try{
+    // Upsert all current data
+    if(trips.length)await sb.from('trips').upsert(trips.map(t=>{const c={...t};delete c.weather;delete c.city;return c}),{onConflict:'id'});
+    await sb.from('items').upsert(items,{onConflict:'id'}).catch(()=>{});
+    await sb.from('moments').upsert(moments,{onConflict:'id'}).catch(()=>{});
+    await sb.from('expenses').upsert(expenses,{onConflict:'id'}).catch(()=>{});
+    await sb.from('pack_items').upsert(packItems.map(p=>({id:p.id,trip_id:p.trip_id,text:p.text,checked:p.checked,added_by:p.added_by,created_at:p.created_at})),{onConflict:'id'}).catch(()=>{});
+  }catch(e){console.log('Sync error',e);}
+}
 
 // ===== SW =====
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // ===== START =====
-if(!loadData())loadDemoData();
-initPickers();
-renderProfileSelect();
+(async function(){
+  // Try cloud first, fallback to local, then demo
+  const cloudOk=await loadFromCloud();
+  if(!cloudOk){
+    if(!loadLocal())loadDemoData();
+    // Push demo data to cloud
+    syncToCloud();
+  }
+  initPickers();
+  renderProfileSelect();
+  startRealtime();
+})();
 </script>
 </body>
 </html>
