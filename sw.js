@@ -1,5 +1,7 @@
-const CACHE_NAME = 'twofold-v2';
+const CACHE_NAME = 'twofold-v3';
 const ASSETS = [
+  './',
+  './index.html',
   './preview.html',
   './manifest.json',
   './icon-192.png',
