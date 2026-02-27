@@ -1179,47 +1179,56 @@ function deleteTrip(id){
     packItems=packItems.filter(p=>p.trip_id!==id);
     suggestions=suggestions.filter(s=>s.trip_id!==id);
     votes=votes.filter(v=>!suggestions.some(s=>s.id===v.suggestion_id));
+    addDeletedId(id);
     saveLocal();
     if(currentTrip&&currentTrip.id===id){currentTrip=null;}
     renderHome();
     _skipRealtime=true;
-    await Promise.all([
+    const r1=await Promise.all([
       sb.from('pack_items').delete().eq('trip_id',id),
       sb.from('expenses').delete().eq('trip_id',id),
       sb.from('moments').delete().eq('trip_id',id),
       sb.from('items').delete().eq('trip_id',id),
     ]);
-    await sb.from('trips').delete().eq('id',id);
+    const r2=await sb.from('trips').delete().eq('id',id);
+    console.log('deleteTrip cloud result:',r2);
+    if(!r2.error)removeDeletedId(id);
     setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 function deleteItem(id){
   const it=items.find(i=>i.id===id);
   confirmAction({icon:'📍',title:`"${it?it.title:'Öğe'}" silinsin mi?`,msg:'Bu plan kalıcı olarak silinecek.'},async()=>{
+    addDeletedId(id);
     items=items.filter(i=>i.id!==id);saveLocal();
     renderPlan();
     _skipRealtime=true;
-    await sb.from('items').delete().eq('id',id);
+    const r=await sb.from('items').delete().eq('id',id);
+    if(!r.error)removeDeletedId(id);
     setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 function deleteMoment(id){
   const m=moments.find(m=>m.id===id);
   confirmAction({icon:'💭',title:'Bu anı silinsin mi?',msg:m?`"${m.note.slice(0,40)}${m.note.length>40?'...':''}"`:'Bu işlem geri alınamaz.'},async()=>{
+    addDeletedId(id);
     moments=moments.filter(m=>m.id!==id);saveLocal();
     renderPlan();
     _skipRealtime=true;
-    await sb.from('moments').delete().eq('id',id);
+    const r=await sb.from('moments').delete().eq('id',id);
+    if(!r.error)removeDeletedId(id);
     setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 function deleteExpense(id){
   const e=expenses.find(e=>e.id===id);
   confirmAction({icon:'💰',title:`"${e?e.title:'Harcama'}" silinsin mi?`,msg:'Bu harcama kalıcı olarak silinecek.'},async()=>{
+    addDeletedId(id);
     expenses=expenses.filter(e=>e.id!==id);saveLocal();
     renderBudget();
     _skipRealtime=true;
-    await sb.from('expenses').delete().eq('id',id);
+    const r=await sb.from('expenses').delete().eq('id',id);
+    if(!r.error)removeDeletedId(id);
     setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
@@ -1674,10 +1683,12 @@ function togglePack(id){
 function deletePack(id){
   const p=packItems.find(p=>p.id===id);
   confirmAction({icon:'🧳',title:`"${p?p.text:'Öğe'}" silinsin mi?`,msg:'Bavuldan kalıcı olarak çıkarılacak.'},async()=>{
+    addDeletedId(id);
     packItems=packItems.filter(p=>p.id!==id);saveLocal();
     renderPacking();
     _skipRealtime=true;
-    await sb.from('pack_items').delete().eq('id',id);
+    const r=await sb.from('pack_items').delete().eq('id',id);
+    if(!r.error)removeDeletedId(id);
     setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
@@ -1912,6 +1923,12 @@ function showMatch(sug){
 function hideMatch(){document.getElementById('match-overlay').classList.remove('show')}
 
 // ===== PERSISTENCE =====
+// Track locally deleted IDs so cloud reload doesn't resurrect them
+function getDeletedIds(){return JSON.parse(localStorage.getItem('tf_deleted')||'[]')}
+function addDeletedId(id){const d=getDeletedIds();if(!d.includes(id)){d.push(id);localStorage.setItem('tf_deleted',JSON.stringify(d))}}
+function removeDeletedId(id){const d=getDeletedIds().filter(x=>x!==id);localStorage.setItem('tf_deleted',JSON.stringify(d))}
+function filterDeleted(arr){const d=getDeletedIds();return arr.filter(x=>!d.includes(x.id)&&!d.includes(x.trip_id))}
+
 // ===== SUPABASE =====
 const SB_URL='https://wjccqjoigejyepgdwqqc.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqY2Nxam9pZ2VqeWVwZ2R3cXFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMjMwMDcsImV4cCI6MjA4NzY5OTAwN30.LfsPbTZh3kQRp4yo6sO7nDP-hAKn2fZcjfyi4ObBGUE';
@@ -1995,8 +2012,8 @@ async function loadFromCloud(){
       sb.from('votes').select('*')
     ]);
     if(t.data&&t.data.length>0){
-      trips=t.data;items=i.data||[];moments=m.data||[];
-      expenses=e.data||[];packItems=p.data||[];
+      trips=filterDeleted(t.data);items=filterDeleted(i.data||[]);moments=filterDeleted(m.data||[]);
+      expenses=filterDeleted(e.data||[]);packItems=filterDeleted(p.data||[]);
       suggestions=s.data||[];votes=v.data||[];
       saveLocal();
       return true;
