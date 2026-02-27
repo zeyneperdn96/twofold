@@ -1171,7 +1171,7 @@ function confirmCancel(){
 // ===== DELETE FUNCTIONS =====
 function deleteTrip(id){
   const t=trips.find(t=>t.id===id);
-  confirmAction({icon:'✈️',title:`"${t?t.title:'Trip'}" silinsin mi?`,msg:'Tüm planlar, harcamalar ve anılar da silinecek.'},()=>{
+  confirmAction({icon:'✈️',title:`"${t?t.title:'Trip'}" silinsin mi?`,msg:'Tüm planlar, harcamalar ve anılar da silinecek.'},async()=>{
     trips=trips.filter(t=>t.id!==id);
     items=items.filter(i=>i.trip_id!==id);
     moments=moments.filter(m=>m.trip_id!==id);
@@ -1180,33 +1180,47 @@ function deleteTrip(id){
     suggestions=suggestions.filter(s=>s.trip_id!==id);
     votes=votes.filter(v=>!suggestions.some(s=>s.id===v.suggestion_id));
     saveLocal();
-    sb.from('trips').delete().eq('id',id);
     if(currentTrip&&currentTrip.id===id){currentTrip=null;}
     renderHome();
+    _skipRealtime=true;
+    await Promise.all([
+      sb.from('pack_items').delete().eq('trip_id',id),
+      sb.from('expenses').delete().eq('trip_id',id),
+      sb.from('moments').delete().eq('trip_id',id),
+      sb.from('items').delete().eq('trip_id',id),
+    ]);
+    await sb.from('trips').delete().eq('id',id);
+    setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 function deleteItem(id){
   const it=items.find(i=>i.id===id);
-  confirmAction({icon:'📍',title:`"${it?it.title:'Öğe'}" silinsin mi?`,msg:'Bu plan kalıcı olarak silinecek.'},()=>{
+  confirmAction({icon:'📍',title:`"${it?it.title:'Öğe'}" silinsin mi?`,msg:'Bu plan kalıcı olarak silinecek.'},async()=>{
     items=items.filter(i=>i.id!==id);saveLocal();
-    sb.from('items').delete().eq('id',id);
     renderPlan();
+    _skipRealtime=true;
+    await sb.from('items').delete().eq('id',id);
+    setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 function deleteMoment(id){
   const m=moments.find(m=>m.id===id);
-  confirmAction({icon:'💭',title:'Bu anı silinsin mi?',msg:m?`"${m.note.slice(0,40)}${m.note.length>40?'...':''}"`:'Bu işlem geri alınamaz.'},()=>{
+  confirmAction({icon:'💭',title:'Bu anı silinsin mi?',msg:m?`"${m.note.slice(0,40)}${m.note.length>40?'...':''}"`:'Bu işlem geri alınamaz.'},async()=>{
     moments=moments.filter(m=>m.id!==id);saveLocal();
-    sb.from('moments').delete().eq('id',id);
     renderPlan();
+    _skipRealtime=true;
+    await sb.from('moments').delete().eq('id',id);
+    setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 function deleteExpense(id){
   const e=expenses.find(e=>e.id===id);
-  confirmAction({icon:'💰',title:`"${e?e.title:'Harcama'}" silinsin mi?`,msg:'Bu harcama kalıcı olarak silinecek.'},()=>{
+  confirmAction({icon:'💰',title:`"${e?e.title:'Harcama'}" silinsin mi?`,msg:'Bu harcama kalıcı olarak silinecek.'},async()=>{
     expenses=expenses.filter(e=>e.id!==id);saveLocal();
-    sb.from('expenses').delete().eq('id',id);
     renderBudget();
+    _skipRealtime=true;
+    await sb.from('expenses').delete().eq('id',id);
+    setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 
@@ -1659,10 +1673,12 @@ function togglePack(id){
 }
 function deletePack(id){
   const p=packItems.find(p=>p.id===id);
-  confirmAction({icon:'🧳',title:`"${p?p.text:'Öğe'}" silinsin mi?`,msg:'Bavuldan kalıcı olarak çıkarılacak.'},()=>{
+  confirmAction({icon:'🧳',title:`"${p?p.text:'Öğe'}" silinsin mi?`,msg:'Bavuldan kalıcı olarak çıkarılacak.'},async()=>{
     packItems=packItems.filter(p=>p.id!==id);saveLocal();
-    sb.from('pack_items').delete().eq('id',id);
     renderPacking();
+    _skipRealtime=true;
+    await sb.from('pack_items').delete().eq('id',id);
+    setTimeout(()=>{_skipRealtime=false},1000);
   });
 }
 
@@ -1990,7 +2006,9 @@ async function loadFromCloud(){
 }
 
 // Realtime subscriptions
+let _skipRealtime=false;
 function handleRealtimeChange(payload,table){
+  if(_skipRealtime)return;
   const row=payload.new||payload.old||{};
   const who=row.added_by||row.created_by||row.paid_by||null;
   if(who&&who!==CURRENT_USER){
