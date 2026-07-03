@@ -272,12 +272,25 @@
   /* Location card (with photo placeholder) */
   .loc-card{
     display:flex;align-items:center;gap:12px;
-    background:var(--card);border-radius:16px;
-    padding:12px;margin-bottom:8px;
-    box-shadow:0 1px 4px rgba(0,0,0,.03);
-    transition:transform .15s;
+    background:var(--card);border-radius:18px;
+    padding:13px 14px;margin-bottom:8px;
+    box-shadow:0 2px 10px rgba(45,45,45,.05);
+    transition:transform .15s, background .25s;
   }
   .loc-card:active{transform:scale(.98)}
+  /* Plan → Experience: yaşanmış durum (soluk değil, sıcak/ödüllendirici) */
+  .loc-card.visited{background:var(--accent-light);box-shadow:none}
+  .loc-card.visited .loc-title{color:var(--accent-dark)}
+  .loc-check{
+    flex-shrink:0;width:30px;height:30px;border-radius:50%;
+    border:2px solid var(--border);background:transparent;color:transparent;
+    font-size:15px;font-weight:800;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:transform .18s, background .18s, border-color .18s, color .18s;
+  }
+  .loc-check:active{transform:scale(.82)}
+  .loc-check.on{background:var(--accent);border-color:var(--accent);color:#fff;
+    box-shadow:0 2px 8px rgba(91,191,173,.35)}
   .loc-thumb{
     width:48px;height:48px;border-radius:12px;
     display:flex;align-items:center;justify-content:center;
@@ -538,8 +551,11 @@
     background:var(--danger);width:80px;
     display:flex;align-items:center;justify-content:center;
     color:white;font-size:12px;font-weight:700;
-    border-radius:0 16px 16px 0;
+    border-radius:0 18px 18px 0;
+    opacity:0;transition:opacity .15s;   /* sadece swipe/silme sırasında görün → köşe taşması gider */
   }
+  .swipe-wrap:has(.swipe-fg.swiping) .swipe-bg,
+  .swipe-wrap:has(.swipe-fg.removing) .swipe-bg{opacity:1}
   .swipe-fg{position:relative;z-index:1;transition:transform .2s;background:var(--card);border-radius:16px}
   .swipe-fg.swiping{transition:none}
   .swipe-fg.removing{transition:transform .3s,opacity .3s;transform:translateX(-100%)!important;opacity:0}
@@ -640,7 +656,7 @@
     padding:24px;transition:transform 0.3s,opacity 0.3s;
     touch-action:none;user-select:none;
   }
-  .swipe-card:nth-child(2){transform:scale(0.95) translateY(10px);opacity:0.7;pointer-events:none}
+  /* arka kart zaten inline stille (scale/opacity) geride; nth-child kuralı ön kartı hedefleyip saydamlaştırıyordu (bleed-through) → kaldırıldı */
   .swipe-card .card-emoji{font-size:48px;text-align:center;margin-bottom:12px}
   .swipe-card .card-title{font-size:18px;font-weight:700;text-align:center}
   .swipe-card .card-cat{font-size:12px;color:var(--muted);text-align:center;margin-top:4px;text-transform:capitalize}
@@ -1404,6 +1420,30 @@ function renderTripHome(){
 }
 
 // ===== RENDER PLAN (VibeMap) =====
+// activity card — tek yerden (Plan liste). Sağda yaşandı ✓ butonu + swipe-sil.
+function activityCard(item,i){
+  const visited=item.status==='visited';
+  const sub=item.time?item.time.slice(0,5):(item.date?'Saat belirtilmedi':'Tarihsiz');
+  return `<div class="swipe-wrap" data-id="${item.id}"><div class="swipe-bg">Sil</div><div class="swipe-fg">
+    <div class="loc-card${visited?' visited':''} si" style="animation-delay:${i*40}ms">
+      <div class="loc-thumb ${thumbClass(item.category,item.type)}">${catEmoji(item.category,item.type)}</div>
+      <div class="loc-info">
+        <div class="loc-title">${item.title}</div>
+        <div class="loc-sub">${visited?'✓ Yaşandı':sub}</div>
+      </div>
+      ${av(item.added_by)}
+      <button class="loc-check${visited?' on':''}" onclick="event.stopPropagation();toggleVisited('${item.id}')" aria-label="Yaşandı işaretle">${visited?'✓':''}</button>
+    </div>
+  </div></div>`;
+}
+// Plan → Experience: planlanan bir aktiviteyi "yaşandı"ya çevir (ve geri)
+function toggleVisited(id){
+  const it=items.find(i=>i.id===id); if(!it)return;
+  it.status=it.status==='visited'?'planned':'visited';
+  saveLocal();
+  if(currentTab==='plan')renderPlan();else renderTripHome();
+  try{ dbUpsert('items',it); }catch(e){}
+}
 function renderPlan(){
   const ti=items.filter(i=>i.trip_id===currentTrip.id);
   const tm=moments.filter(m=>m.trip_id===currentTrip.id);
@@ -1479,33 +1519,11 @@ function renderPlan(){
   Object.keys(dated).sort().forEach(date=>{
     const d=new Date(date);
     h+=`<div class="sec-header">${d.getDate()} ${d.toLocaleString('tr-TR',{month:'long'})}</div>`;
-    dated[date].forEach((item,i)=>{
-      h+=`<div class="swipe-wrap" data-id="${item.id}"><div class="swipe-bg">Sil</div><div class="swipe-fg">
-        <div class="loc-card si" style="animation-delay:${i*40}ms;${item.status==='visited'?'opacity:.5':''}">
-          <div class="loc-thumb ${thumbClass(item.category,item.type)}">${catEmoji(item.category,item.type)}</div>
-          <div class="loc-info">
-            <div class="loc-title">${item.status==='visited'?'✓ ':''}${item.title}</div>
-            <div class="loc-sub">${item.time?item.time.slice(0,5):'Saat belirtilmedi'}</div>
-          </div>
-          ${av(item.added_by)}
-        </div>
-      </div></div>`;
-    });
+    dated[date].forEach((item,i)=>{ h+=activityCard(item,i); });
   });
   if(undated.length){
     h+=`<div class="sec-header">Tarihsiz</div>`;
-    undated.forEach((item,i)=>{
-      h+=`<div class="swipe-wrap" data-id="${item.id}"><div class="swipe-bg">Sil</div><div class="swipe-fg">
-        <div class="loc-card si" style="animation-delay:${i*40}ms;${item.status==='visited'?'opacity:.5':''}">
-          <div class="loc-thumb ${thumbClass(item.category,item.type)}">${catEmoji(item.category,item.type)}</div>
-          <div class="loc-info">
-            <div class="loc-title">${item.title}</div>
-            <div class="loc-sub">Tarihsiz</div>
-          </div>
-          ${av(item.added_by)}
-        </div>
-      </div></div>`;
-    });
+    undated.forEach((item,i)=>{ h+=activityCard(item,i); });
   }
   h+=`</div>`;
   c.innerHTML=h;
@@ -1601,7 +1619,7 @@ function renderBudget(){
 
   h+=`<div style="padding:0 20px">`;
   h+=`<div class="money-header">
-    <div class="money-label">Total Spent</div>
+    <div class="money-label">Toplam Harcama</div>
     ${Object.entries(totals).map(([cur,a])=>`<div class="money-total">${a.toLocaleString('tr-TR',{minimumFractionDigits:2})} <span class="currency">${cur}</span></div>`).join('')}
     <div class="money-people">
       ${PEOPLE.map(p=>{
@@ -1613,7 +1631,7 @@ function renderBudget(){
         return `<div class="money-person">
           <div class="money-person-name">${av(p.name,18)} ${p.name.charAt(0).toUpperCase()+p.name.slice(1)}</div>
           ${Object.entries(pt).map(([c,a])=>`<div class="money-person-amt">${a.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${c}</div>`).join('')||'<div class="money-person-amt">0</div>'}
-          <div class="money-bar"><div class="money-bar-fill" style="width:${pct}%;background:${p.textColor}"></div></div>
+          <div class="money-bar"><div class="money-bar-fill ${p.name==='zeynep'?'z':'b'}" style="width:${pct}%"></div></div>
         </div>`;
       }).join('')}
     </div>
