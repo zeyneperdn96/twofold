@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Field, Sheet, SheetActions, VerdictPicker } from '@/components/sheets/Sheet'
 import { inputClass, parseCost } from '@/components/sheets/styles'
 import { useT } from '@/lib/i18n'
-import { useDataStore, type LocalTrip } from '@/store/data'
+import { addPlan, addSurprise } from '@/lib/actions'
+import type { LocalTrip } from '@/store/data'
 import type { Verdict } from '@/types'
 
 type Mode = 'plan' | 'surprise'
@@ -33,8 +34,6 @@ function AddMomentForm({
   dayIndex: number
 }) {
   const t = useT()
-  const addPlan = useDataStore((s) => s.addPlan)
-  const addSurprise = useDataStore((s) => s.addSurprise)
 
   const [mode, setMode] = useState<Mode>('plan')
   const [title, setTitle] = useState('')

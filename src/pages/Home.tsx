@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { inputClass } from '@/components/sheets/styles'
+import { joinTrip } from '@/lib/actions'
+import { isCloud } from '@/lib/supabase'
 import { NewTripSheet } from '@/components/sheets/NewTripSheet'
 import { useT } from '@/lib/i18n'
 import { addDays, daysBetween, parseLocalDate, startOfToday, tripPhase } from '@/lib/dates'
@@ -69,18 +72,66 @@ export function Home() {
         )}
       </div>
 
-      <div className="flex justify-center pt-8">
-        <button
-          type="button"
-          onClick={resetDemo}
-          className="text-[12px] font-semibold text-text-muted underline underline-offset-2"
-        >
-          {t.resetDemo}
-        </button>
-      </div>
+      {isCloud ? (
+        <JoinWithCode />
+      ) : (
+        <div className="flex justify-center pt-8">
+          <button
+            type="button"
+            onClick={resetDemo}
+            className="text-[12px] font-semibold text-text-muted underline underline-offset-2"
+          >
+            {t.resetDemo}
+          </button>
+        </div>
+      )}
 
       <NewTripSheet open={newOpen} onClose={() => setNewOpen(false)} />
     </div>
+  )
+}
+
+function JoinWithCode() {
+  const t = useT()
+  const navigate = useNavigate()
+  const [code, setCode] = useState('')
+  const [state, setState] = useState<'idle' | 'busy' | 'bad'>('idle')
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    // accept a pasted invite link as well as the bare code
+    const clean = code.trim().split('/').pop() ?? ''
+    if (!clean) return
+    setState('busy')
+    const tripId = await joinTrip(clean)
+    if (tripId) navigate(`/trip/${tripId}`)
+    else setState('bad')
+  }
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="px-5 pt-8">
+      <p className="text-[12px] font-bold text-text-muted mb-1.5">{t.haveCode}</p>
+      <div className="flex gap-2">
+        <input
+          className={`${inputClass} uppercase tracking-[0.12em]`}
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value)
+            setState('idle')
+          }}
+          placeholder="A1B2C3D4"
+          aria-label={t.haveCode}
+        />
+        <button
+          type="submit"
+          disabled={!code.trim() || state === 'busy'}
+          className="tf-press shrink-0 px-5 rounded-[14px] text-[13px] font-bold text-white bg-accent disabled:opacity-40"
+        >
+          {state === 'busy' ? '…' : t.join}
+        </button>
+      </div>
+      {state === 'bad' && <p className="text-[12px] font-semibold text-danger mt-1.5">{t.badCode}</p>}
+    </form>
   )
 }
 

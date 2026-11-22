@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createDemoData, DEMO_CURRENT_USER_ID, DEMO_USERS } from '@/lib/demo'
 import { isDayOver, startOfToday } from '@/lib/dates'
+import { isCloud } from '@/lib/supabase'
 import type {
   Activity,
   ActivityState,
@@ -11,8 +12,10 @@ import type {
   Verdict,
 } from '@/types'
 
-// Local-first data layer. Everything lives in localStorage until the Supabase
-// backend is wired up; nothing here talks to the network.
+// Local-first data layer and UI cache. In demo mode this is the whole
+// database (localStorage). In cloud mode it caches what Supabase returned;
+// src/lib/actions.ts mirrors every change to the server. Nothing in this
+// file talks to the network.
 
 export interface LocalTrip {
   id: string
@@ -21,6 +24,8 @@ export interface LocalTrip {
   start_date: string // YYYY-MM-DD, local
   day_count: number
   member_ids: string[]
+  /** Cloud mode only: invite code. */
+  join_code?: string
   created_by: string
   created_at: string
 }
@@ -62,20 +67,33 @@ interface DataState {
 
   addTrip: (input: NewTripInput) => string
   deleteTrip: (tripId: string) => void
-  addPlan: (input: NewPlanInput) => void
+  addPlan: (input: NewPlanInput) => LocalActivity
   addSurprise: (
     input: Pick<NewPlanInput, 'trip_id' | 'day_index' | 'title'>,
     story: StoryInput,
-  ) => void
+  ) => { activity: LocalActivity; experience: Experience }
   /** Adds or replaces the current user's side of a moment. */
-  tellStory: (activityId: string, story: StoryInput) => void
+  tellStory: (activityId: string, story: StoryInput) => Experience
   deleteActivity: (activityId: string) => void
   resetDemo: () => void
+  /** Cloud mode: replace the cache with what the server returned. */
+  setSnapshot: (snapshot: Snapshot) => void
+}
+
+export interface Snapshot {
+  users: User[]
+  currentUserId: string
+  trips: LocalTrip[]
+  activities: LocalActivity[]
+  experiences: Experience[]
 }
 
 const uid = () => crypto.randomUUID()
 
 function seed() {
+  if (isCloud) {
+    return { users: [], currentUserId: '', trips: [], activities: [], experiences: [] }
+  }
   return {
     users: DEMO_USERS,
     currentUserId: DEMO_CURRENT_USER_ID,
@@ -135,75 +153,69 @@ export const useDataStore = create<DataState>()(
           }
         }),
 
-      addPlan: (input) =>
+      addPlan: (input) => {
+        const activity: LocalActivity = {
+          id: uid(),
+          ...input,
+          title: input.title.trim(),
+          unplanned: false,
+          created_by: get().currentUserId,
+          created_at: new Date().toISOString(),
+        }
+        set((s) => ({ activities: [...s.activities, activity] }))
+        return activity
+      },
+
+      addSurprise: (input, story) => {
+        const me = get().currentUserId
+        const now = new Date().toISOString()
+        const activity: LocalActivity = {
+          id: uid(),
+          ...input,
+          title: input.title.trim(),
+          planned_time: null,
+          planned_cost: null,
+          planned_note: null,
+          unplanned: true,
+          created_by: me,
+          created_at: now,
+        }
+        const experience: Experience = {
+          id: uid(),
+          activity_id: activity.id,
+          note: story.note.trim(),
+          actual_cost: story.actual_cost,
+          verdict: story.verdict,
+          logged_by: me,
+          logged_at: now,
+        }
         set((s) => ({
-          activities: [
-            ...s.activities,
-            {
-              id: uid(),
-              ...input,
-              title: input.title.trim(),
-              unplanned: false,
-              created_by: s.currentUserId,
-              created_at: new Date().toISOString(),
-            },
-          ],
-        })),
+          activities: [...s.activities, activity],
+          experiences: [...s.experiences, experience],
+        }))
+        return { activity, experience }
+      },
 
-      addSurprise: (input, story) =>
-        set((s) => {
-          const id = uid()
-          const now = new Date().toISOString()
-          return {
-            activities: [
-              ...s.activities,
-              {
-                id,
-                ...input,
-                title: input.title.trim(),
-                planned_time: null,
-                planned_cost: null,
-                planned_note: null,
-                unplanned: true,
-                created_by: s.currentUserId,
-                created_at: now,
-              },
-            ],
-            experiences: [
-              ...s.experiences,
-              {
-                id: uid(),
-                activity_id: id,
-                note: story.note.trim(),
-                actual_cost: story.actual_cost,
-                verdict: story.verdict,
-                logged_by: s.currentUserId,
-                logged_at: now,
-              },
-            ],
-          }
-        }),
-
-      tellStory: (activityId, story) =>
-        set((s) => {
-          const others = s.experiences.filter(
-            (e) => !(e.activity_id === activityId && e.logged_by === s.currentUserId),
-          )
-          return {
-            experiences: [
-              ...others,
-              {
-                id: uid(),
-                activity_id: activityId,
-                note: story.note.trim(),
-                actual_cost: story.actual_cost,
-                verdict: story.verdict,
-                logged_by: s.currentUserId,
-                logged_at: new Date().toISOString(),
-              },
-            ],
-          }
-        }),
+      tellStory: (activityId, story) => {
+        const { experiences, currentUserId } = get()
+        const mine = experiences.find(
+          (e) => e.activity_id === activityId && e.logged_by === currentUserId,
+        )
+        const experience: Experience = {
+          // editing keeps the same row, so the server can upsert it
+          id: mine?.id ?? uid(),
+          activity_id: activityId,
+          note: story.note.trim(),
+          actual_cost: story.actual_cost,
+          verdict: story.verdict,
+          logged_by: currentUserId,
+          logged_at: new Date().toISOString(),
+        }
+        set((s) => ({
+          experiences: [...s.experiences.filter((e) => e !== mine), experience],
+        }))
+        return experience
+      },
 
       deleteActivity: (activityId) =>
         set((s) => ({
@@ -212,8 +224,11 @@ export const useDataStore = create<DataState>()(
         })),
 
       resetDemo: () => set(seed()),
+
+      setSnapshot: (snapshot) => set(snapshot),
     }),
-    { name: 'twofold-data', version: 1 },
+    // separate caches so demo data never mixes with cloud data
+    { name: isCloud ? 'twofold-cloud-cache' : 'twofold-data', version: 1 },
   ),
 )
 

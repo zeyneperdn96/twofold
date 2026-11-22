@@ -3,6 +3,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Home } from '@/pages/Home'
 import { TripDetail } from '@/pages/TripDetail'
 import { TripStory } from '@/pages/TripStory'
+import { Join } from '@/pages/Join'
 import { NotFound } from '@/pages/NotFound'
 
 export const router = createBrowserRouter([
@@ -20,6 +21,10 @@ export const router = createBrowserRouter([
       {
         path: '/trip/:tripId/story',
         element: <TripStory />,
+      },
+      {
+        path: '/join/:code',
+        element: <Join />,
       },
       {
         path: '*',

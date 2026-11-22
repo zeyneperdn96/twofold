@@ -108,6 +108,26 @@ export interface Translations {
   plansThatStayed: string
   whoToldIt: string
   storyEmpty: string
+
+  // Cloud
+  whatsYourName: string
+  nameHint: string
+  continueLabel: string
+  connecting: string
+  cloudError: string
+  retry: string
+  invite: string
+  inviteTitle: string
+  inviteHint: string
+  copyLink: string
+  copied: string
+  inviteCode: string
+  haveCode: string
+  join: string
+  joining: string
+  badCode: string
+  syncError: string
+  inviteAfterCreate: string
 }
 
 const en: Translations = {
@@ -199,6 +219,25 @@ const en: Translations = {
   plansThatStayed: 'PLANS THAT STAYED PLANS',
   whoToldIt: 'WHO TOLD THE STORY',
   storyEmpty: 'Nothing lived yet. The story starts with the first moment.',
+
+  whatsYourName: 'What should we call you?',
+  nameHint: 'Your travel buddies will see this name.',
+  continueLabel: 'Continue',
+  connecting: 'Connecting…',
+  cloudError: 'Could not reach TwoFold.',
+  retry: 'Try again',
+  invite: '＋ Invite',
+  inviteTitle: 'Invite to this trip',
+  inviteHint: 'Send this link. Whoever opens it joins the trip and can add their side.',
+  copyLink: 'Copy link',
+  copied: 'Copied!',
+  inviteCode: 'Code',
+  haveCode: 'Have an invite code?',
+  join: 'Join',
+  joining: 'Joining…',
+  badCode: 'That invite code does not work.',
+  syncError: 'Could not save that. Showing the latest saved version.',
+  inviteAfterCreate: 'You will get an invite link for your travel buddies next.',
 }
 
 const es: Translations = {
@@ -290,6 +329,25 @@ const es: Translations = {
   plansThatStayed: 'PLANES QUE QUEDARON EN PLANES',
   whoToldIt: 'QUIÉN LO CONTÓ',
   storyEmpty: 'Aún no hay nada vivido. La historia empieza con el primer momento.',
+
+  whatsYourName: '¿Cómo te llamamos?',
+  nameHint: 'Tus compañeros de viaje verán este nombre.',
+  continueLabel: 'Continuar',
+  connecting: 'Conectando…',
+  cloudError: 'No se pudo conectar con TwoFold.',
+  retry: 'Reintentar',
+  invite: '＋ Invitar',
+  inviteTitle: 'Invitar a este viaje',
+  inviteHint: 'Envía este enlace. Quien lo abra se une al viaje y puede añadir su versión.',
+  copyLink: 'Copiar enlace',
+  copied: '¡Copiado!',
+  inviteCode: 'Código',
+  haveCode: '¿Tienes un código de invitación?',
+  join: 'Unirme',
+  joining: 'Uniéndote…',
+  badCode: 'Ese código de invitación no funciona.',
+  syncError: 'No se pudo guardar. Mostrando la última versión guardada.',
+  inviteAfterCreate: 'Después recibirás un enlace para invitar a tus compañeros.',
 }
 
 const tr: Translations = {
@@ -381,6 +439,25 @@ const tr: Translations = {
   plansThatStayed: 'PLANDA KALANLAR',
   whoToldIt: 'HİKÂYEYİ KİM ANLATTI',
   storyEmpty: 'Henüz yaşanan bir şey yok. Hikâye ilk anla başlıyor.',
+
+  whatsYourName: 'Sana ne diyelim?',
+  nameHint: 'Yol arkadaşların bu ismi görecek.',
+  continueLabel: 'Devam',
+  connecting: 'Bağlanıyor…',
+  cloudError: "TwoFold'a ulaşılamadı.",
+  retry: 'Tekrar dene',
+  invite: '＋ Davet et',
+  inviteTitle: 'Bu seyahate davet et',
+  inviteHint: 'Bu linki gönder. Açan kişi seyahate katılır ve kendi tarafını ekleyebilir.',
+  copyLink: 'Linki kopyala',
+  copied: 'Kopyalandı!',
+  inviteCode: 'Kod',
+  haveCode: 'Davet kodun mu var?',
+  join: 'Katıl',
+  joining: 'Katılınıyor…',
+  badCode: 'Bu davet kodu çalışmıyor.',
+  syncError: 'Kaydedilemedi. Son kaydedilen hâli gösteriliyor.',
+  inviteAfterCreate: 'Sonra yol arkadaşların için bir davet linki alacaksın.',
 }
 
 const DICTIONARIES: Record<Locale, Translations> = { en, es, tr }

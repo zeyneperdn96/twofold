@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ActivityCard } from '@/components/activity/ActivityCard'
 import { userColor } from '@/lib/userColor'
 import { DaySelector } from '@/components/activity/DaySelector'
@@ -8,6 +8,9 @@ import { useTripUIStore } from '@/store/trip'
 import { useT } from '@/lib/i18n'
 import { AddMomentSheet } from '@/components/sheets/AddMomentSheet'
 import { StorySheet } from '@/components/sheets/StorySheet'
+import { InviteSheet } from '@/components/sheets/InviteSheet'
+import { removeTrip } from '@/lib/actions'
+import { isCloud } from '@/lib/supabase'
 import { buildTripActivities, useDataStore, type LocalTrip } from '@/store/data'
 import { daysBetween, parseLocalDate, startOfToday, todayIndex, tripPhase } from '@/lib/dates'
 import type { ActivityWithExperiences } from '@/types'
@@ -52,7 +55,6 @@ function TripView({ trip }: { trip: LocalTrip }) {
   const allActivities = useDataStore((s) => s.activities)
   const experiences = useDataStore((s) => s.experiences)
   const currentUserId = useDataStore((s) => s.currentUserId)
-  const deleteTrip = useDataStore((s) => s.deleteTrip)
   const storedDayIndex = useTripUIStore((s) => s.selectedDayIndex)
   const setSelectedDayIndex = useTripUIStore((s) => s.setSelectedDayIndex)
 
@@ -60,6 +62,12 @@ function TripView({ trip }: { trip: LocalTrip }) {
   const [addOpen, setAddOpen] = useState(false)
   const [storyFor, setStoryFor] = useState<ActivityWithExperiences | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  // a freshly created cloud trip opens straight on its invite sheet
+  const location = useLocation()
+  const [inviteOpen, setInviteOpen] = useState(
+    () => isCloud && (location.state as { invite?: boolean } | null)?.invite === true,
+  )
+  const canDelete = !isCloud || trip.created_by === currentUserId
 
   // Open a trip on today's page (or its first/last day outside the trip)
   useEffect(() => {
@@ -181,6 +189,16 @@ function TripView({ trip }: { trip: LocalTrip }) {
           >
             {t.tripStory} →
           </Link>
+          {isCloud && trip.join_code && (
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="tf-press text-[12px] font-bold px-3.5 py-1.5 rounded-full bg-accent text-white"
+              style={{ boxShadow: '0 2px 8px rgba(91, 191, 173, 0.3)' }}
+            >
+              {t.invite}
+            </button>
+          )}
         </div>
       </header>
 
@@ -224,6 +242,7 @@ function TripView({ trip }: { trip: LocalTrip }) {
 
       {/* delete trip: two taps, no browser dialog */}
       <div className="flex justify-center pt-10 pb-4">
+        {canDelete && (
         <button
           type="button"
           onClick={() => {
@@ -232,7 +251,7 @@ function TripView({ trip }: { trip: LocalTrip }) {
               window.setTimeout(() => setConfirmingDelete(false), 3000)
               return
             }
-            deleteTrip(trip.id)
+            removeTrip(trip.id)
             navigate('/')
           }}
           className="tf-press text-[12px] font-semibold px-4 py-2 rounded-full"
@@ -243,7 +262,11 @@ function TripView({ trip }: { trip: LocalTrip }) {
         >
           {confirmingDelete ? t.confirmDelete : t.deleteTrip}
         </button>
+        )}
       </div>
+      {isCloud && (
+        <InviteSheet trip={trip} open={inviteOpen} onClose={() => setInviteOpen(false)} />
+      )}
 
       <AddMomentSheet
         open={addOpen}

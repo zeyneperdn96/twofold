@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Field, Sheet, SheetActions, VerdictPicker } from '@/components/sheets/Sheet'
 import { inputClass, parseCost } from '@/components/sheets/styles'
 import { useT } from '@/lib/i18n'
+import { tellStory } from '@/lib/actions'
 import { useDataStore } from '@/store/data'
 import type { ActivityWithExperiences, Verdict } from '@/types'
 
@@ -34,7 +35,6 @@ function StoryForm({
 }) {
   const t = useT()
   const currentUserId = useDataStore((s) => s.currentUserId)
-  const tellStory = useDataStore((s) => s.tellStory)
   const mine = activity.experiences.find((e) => e.logged_by === currentUserId)
 
   const [note, setNote] = useState(mine?.note ?? '')

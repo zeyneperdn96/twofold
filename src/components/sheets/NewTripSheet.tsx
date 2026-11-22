@@ -4,7 +4,8 @@ import { Field, Sheet, SheetActions } from '@/components/sheets/Sheet'
 import { inputClass } from '@/components/sheets/styles'
 import { startOfToday, toISODate } from '@/lib/dates'
 import { useT } from '@/lib/i18n'
-import { useDataStore } from '@/store/data'
+import { createTrip } from '@/lib/actions'
+import { isCloud } from '@/lib/supabase'
 
 const TRIP_EMOJIS = ['✈️', '🗼', '🏖️', '🏔️', '🏛️', '🌸', '🍜', '🚗']
 const MAX_DAYS = 14
@@ -21,32 +22,37 @@ export function NewTripSheet({ open, onClose }: { open: boolean; onClose: () => 
 function NewTripForm({ onClose }: { onClose: () => void }) {
   const t = useT()
   const navigate = useNavigate()
-  const addTrip = useDataStore((s) => s.addTrip)
 
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState(TRIP_EMOJIS[0])
   const [start, setStart] = useState(() => toISODate(startOfToday()))
   const [days, setDays] = useState(3)
   const [companions, setCompanions] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const canSubmit = name.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(start)
+  const canSubmit = name.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(start) && !saving
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!canSubmit) return
-    const id = addTrip({
+    setSaving(true)
+    const id = await createTrip({
       name,
       emoji,
       start_date: start,
       day_count: days,
       companions: companions.split(','),
     })
+    if (!id) {
+      setSaving(false)
+      return
+    }
     onClose()
-    navigate(`/trip/${id}`)
+    navigate(`/trip/${id}`, { state: isCloud ? { invite: true } : undefined })
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={(e) => void submit(e)} className="space-y-4">
       <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
         {TRIP_EMOJIS.map((e) => {
           const active = e === emoji
@@ -116,14 +122,18 @@ function NewTripForm({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <Field label={t.whoIsComing} hint={t.companionsHint} optional>
-        <input
-          className={inputClass}
-          value={companions}
-          onChange={(e) => setCompanions(e.target.value)}
-          placeholder="Alex, Mike"
-        />
-      </Field>
+      {isCloud ? (
+        <p className="text-[12px] text-text-muted">{t.inviteAfterCreate}</p>
+      ) : (
+        <Field label={t.whoIsComing} hint={t.companionsHint} optional>
+          <input
+            className={inputClass}
+            value={companions}
+            onChange={(e) => setCompanions(e.target.value)}
+            placeholder="Alex, Mike"
+          />
+        </Field>
+      )}
 
       <SheetActions onCancel={onClose} submitLabel={t.createTrip} disabled={!canSubmit} />
     </form>

@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+# TwoFold
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A shared travel journal: what you planned next to how it actually went,
+with every travel buddy keeping their own side of each moment.
 
-Currently, two official plugins are available:
+React 19 + TypeScript + Vite + Tailwind 4 + Zustand. Design: cream `#F7F6F2`,
+mint `#5BBFAD`, Nunito (same look as the original TwoFold prototype).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Two modes
 
-## React Compiler
+| | Demo mode | Cloud mode |
+|---|---|---|
+| When | no `.env` | `.env` with Supabase URL + anon key |
+| Data | this browser only (localStorage) | Supabase, shared between devices |
+| People | names typed when creating a trip | everyone signs in anonymously with a name, joins with an invite link |
+| Network | none | Supabase only |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Cloud setup (once)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Use a **new** Supabase project. Do not point this at the old prototype project.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. supabase.com > New project (free tier is fine).
+2. SQL Editor > New query > paste `supabase/schema.sql` > Run.
+3. Authentication > Sign In / Providers > turn on **Allow anonymous sign-ins**.
+4. Project Settings > API: copy the Project URL and the `anon` public key.
+5. `cp .env.example .env` and fill in both values. Restart `npm run dev`.
+
+`schema.sql` is safe to run again after changes.
+
+### How access works
+
+- Each device gets an anonymous Supabase user and a profile with a name.
+- A trip is visible only to its members (row level security).
+- `create_trip()` makes the creator the first member; `join_trip(code)` adds
+  whoever has the 8-character invite code (`/join/<CODE>` link or the code box on Home).
+- Each member writes only their own side (`experiences.logged_by = auth.uid()`),
+  one per moment. Only the creator can delete a trip.
+- Clearing the browser loses that anonymous identity (no account recovery yet).
+
+## Code map
+
+- `src/store/data.ts` – the store: whole database in demo mode, cache in cloud mode
+- `src/lib/actions.ts` – every write: local first, then Supabase
+- `src/lib/cloud.ts` – anonymous session, refresh, realtime
+- `src/lib/demo.ts` – demo trip (dates relative to today, always live on day 2)
+- `src/lib/summary.ts` – trip story numbers (no AI)
+- `supabase/schema.sql` – tables, RLS, RPCs, realtime
