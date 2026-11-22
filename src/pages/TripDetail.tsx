@@ -174,6 +174,13 @@ function TripView({ trip }: { trip: LocalTrip }) {
             <span className="text-text-muted">·</span>
             <span className="text-text-muted">{t.livedAwaiting(lived, awaiting)}</span>
           </div>
+          <Link
+            to={`/trip/${trip.id}/story`}
+            className="tf-press mt-1 text-[12px] font-bold px-3.5 py-1.5 rounded-full bg-card text-accent-dark"
+            style={{ boxShadow: '0 1px 6px rgba(0, 0, 0, 0.06)' }}
+          >
+            {t.tripStory} →
+          </Link>
         </div>
       </header>
 

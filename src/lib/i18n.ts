@@ -86,6 +86,28 @@ export interface Translations {
   yourCost: string
   comparedToHope: string
   saveMySide: string
+
+  // Trip story
+  tripStory: string
+  soFar: string
+  postTripNudge: (tripName: string) => string
+  statLived: string
+  statSurprises: string
+  statGhosts: string
+  statAhead: string
+  howItFelt: string
+  planVsReality: string
+  planned: string
+  spent: string
+  acrossPlans: (n: number) => string
+  surprisesAdded: (amount: number) => string
+  noMoney: string
+  highlight: string
+  biggestSurprise: string
+  seenDifferently: string
+  plansThatStayed: string
+  whoToldIt: string
+  storyEmpty: string
 }
 
 const en: Translations = {
@@ -94,7 +116,7 @@ const en: Translations = {
   newTrip: '+ New Trip',
   demoLabel: 'Demo',
 
-  daysSouls: (d, s) => `${d} days, ${s} souls`,
+  daysSouls: (d, s) => `${d} ${d === 1 ? 'day' : 'days'}, ${s} ${s === 1 ? 'soul' : 'souls'}`,
   live: 'Live',
   livedAwaiting: (l, a) => `${l} lived · ${a} awaiting`,
   addMomentToDay: (n) => `+ Add a moment to Day ${n}`,
@@ -156,6 +178,27 @@ const en: Translations = {
   yourCost: 'What did it cost you? (€)',
   comparedToHope: 'Compared to what you hoped',
   saveMySide: 'Save my side',
+
+  tripStory: '📖 Trip story',
+  soFar: 'So far',
+  postTripNudge: (name) => `${name} is done. Some moments are still unrecorded.`,
+  statLived: 'lived',
+  statSurprises: 'surprises',
+  statGhosts: 'stayed plans',
+  statAhead: 'still ahead',
+  howItFelt: 'HOW IT FELT',
+  planVsReality: 'PLAN VS REALITY',
+  planned: 'Planned',
+  spent: 'Spent',
+  acrossPlans: (n) => (n === 1 ? 'per person, 1 plan compared' : `per person, ${n} plans compared`),
+  surprisesAdded: (a) => `Surprises added ~${a}€ each`,
+  noMoney: 'Log a few costs to compare the plan with reality.',
+  highlight: 'THE HIGHLIGHT',
+  biggestSurprise: 'BIGGEST SURPRISE',
+  seenDifferently: 'SEEN DIFFERENTLY',
+  plansThatStayed: 'PLANS THAT STAYED PLANS',
+  whoToldIt: 'WHO TOLD THE STORY',
+  storyEmpty: 'Nothing lived yet. The story starts with the first moment.',
 }
 
 const es: Translations = {
@@ -164,7 +207,7 @@ const es: Translations = {
   newTrip: '+ Nuevo viaje',
   demoLabel: 'Demo',
 
-  daysSouls: (d, s) => `${d} días, ${s} almas`,
+  daysSouls: (d, s) => `${d} ${d === 1 ? 'día' : 'días'}, ${s} ${s === 1 ? 'alma' : 'almas'}`,
   live: 'En vivo',
   livedAwaiting: (l, a) => `${l} vividos · ${a} pendientes`,
   addMomentToDay: (n) => `+ Añadir un momento al Día ${n}`,
@@ -226,6 +269,27 @@ const es: Translations = {
   yourCost: '¿Cuánto te costó? (€)',
   comparedToHope: 'Comparado con lo que esperabas',
   saveMySide: 'Guardar mi versión',
+
+  tripStory: '📖 Historia del viaje',
+  soFar: 'Hasta ahora',
+  postTripNudge: (name) => `${name} terminó. Algunos momentos siguen sin contarse.`,
+  statLived: 'vividos',
+  statSurprises: 'sorpresas',
+  statGhosts: 'solo planes',
+  statAhead: 'por venir',
+  howItFelt: 'CÓMO SE SINTIÓ',
+  planVsReality: 'PLAN VS REALIDAD',
+  planned: 'Planeado',
+  spent: 'Gastado',
+  acrossPlans: (n) => (n === 1 ? 'por persona, 1 plan comparado' : `por persona, ${n} planes comparados`),
+  surprisesAdded: (a) => `Las sorpresas sumaron ~${a}€ cada uno`,
+  noMoney: 'Anota algunos gastos para comparar el plan con la realidad.',
+  highlight: 'LO MEJOR',
+  biggestSurprise: 'LA GRAN SORPRESA',
+  seenDifferently: 'VISTO DISTINTO',
+  plansThatStayed: 'PLANES QUE QUEDARON EN PLANES',
+  whoToldIt: 'QUIÉN LO CONTÓ',
+  storyEmpty: 'Aún no hay nada vivido. La historia empieza con el primer momento.',
 }
 
 const tr: Translations = {
@@ -296,6 +360,27 @@ const tr: Translations = {
   yourCost: 'Sana kaça patladı? (€)',
   comparedToHope: 'Umduğuna göre',
   saveMySide: 'Tarafımı kaydet',
+
+  tripStory: '📖 Seyahat hikâyesi',
+  soFar: 'Şimdiye kadar',
+  postTripNudge: (name) => `${name} bitti. Bazı anlar hâlâ yazılmadı.`,
+  statLived: 'yaşandı',
+  statSurprises: 'sürpriz',
+  statGhosts: 'plan kaldı',
+  statAhead: 'sırada',
+  howItFelt: 'NASIL HİSSETTİRDİ',
+  planVsReality: 'PLAN VE GERÇEK',
+  planned: 'Planlanan',
+  spent: 'Harcanan',
+  acrossPlans: (n) => `kişi başı, ${n} plan karşılaştırıldı`,
+  surprisesAdded: (a) => `Sürprizler kişi başı ~${a}€ ekledi`,
+  noMoney: 'Planı gerçekle karşılaştırmak için birkaç tutar gir.',
+  highlight: 'EN GÜZEL AN',
+  biggestSurprise: 'EN BÜYÜK SÜRPRİZ',
+  seenDifferently: 'FARKLI YAŞANANLAR',
+  plansThatStayed: 'PLANDA KALANLAR',
+  whoToldIt: 'HİKÂYEYİ KİM ANLATTI',
+  storyEmpty: 'Henüz yaşanan bir şey yok. Hikâye ilk anla başlıyor.',
 }
 
 const DICTIONARIES: Record<Locale, Translations> = { en, es, tr }
