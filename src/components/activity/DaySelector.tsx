@@ -25,7 +25,7 @@ export function DaySelector({ startDate, dayCount }: DaySelectorProps) {
   })
 
   return (
-    <div className="flex gap-2.5 px-5 pt-5 pb-4">
+    <div className="flex gap-2.5 px-5 pt-5 pb-4 overflow-x-auto scrollbar-none">
       {days.map((day) => {
         const active = day.index === selectedDayIndex
         return (
@@ -33,7 +33,7 @@ export function DaySelector({ startDate, dayCount }: DaySelectorProps) {
             key={day.index}
             type="button"
             onClick={() => setSelectedDayIndex(day.index)}
-            className="tf-press flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-[24px] text-[13px] font-bold"
+            className="tf-press flex-1 min-w-[72px] shrink-0 flex items-center justify-center gap-1.5 py-2.5 rounded-[24px] text-[13px] font-bold"
             style={{
               background: active ? 'var(--color-accent)' : 'var(--color-card)',
               color: active ? '#ffffff' : 'var(--color-text-primary)',

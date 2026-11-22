@@ -73,17 +73,81 @@ function formatLoggedTime(loggedAt: string | undefined): string {
 
 interface ActivityCardProps {
   activity: ActivityWithExperiences
+  currentUserId: string
+  onTellStory: (activity: ActivityWithExperiences) => void
 }
 
-export function ActivityCard({ activity }: ActivityCardProps) {
+interface CardProps {
+  activity: ActivityWithExperiences
+  t: Translations
+  currentUserId: string
+  onTellStory: () => void
+}
+
+export function ActivityCard({ activity, currentUserId, onTellStory }: ActivityCardProps) {
   const t = useT()
-  if (activity.state === 'unplanned')
-    return <UnplannedCard activity={activity} t={t} />
-  if (activity.state === 'plan-only')
-    return <PlanOnlyCard activity={activity} t={t} />
-  if (activity.state === 'ghost')
-    return <GhostCard activity={activity} t={t} />
-  return <ExperiencedCard activity={activity} t={t} />
+  const props: CardProps = {
+    activity,
+    t,
+    currentUserId,
+    onTellStory: () => onTellStory(activity),
+  }
+  if (activity.state === 'unplanned') return <UnplannedCard {...props} />
+  if (activity.state === 'plan-only') return <PlanOnlyCard {...props} />
+  if (activity.state === 'ghost') return <GhostCard {...props} />
+  return <ExperiencedCard {...props} />
+}
+
+// Someone whose verdict sits on the opposite end from mine (WOW vs MEH)
+function divergentMember(
+  experiences: ExperienceWithUser[],
+  currentUserId: string,
+): string | null {
+  const mine = experiences.find((e) => e.logged_by === currentUserId)?.verdict
+  if (!mine || mine === 'same') return null
+  const other = experiences.find(
+    (e) => e.logged_by !== currentUserId && e.verdict && e.verdict !== 'same' && e.verdict !== mine,
+  )
+  return other?.user?.name ?? null
+}
+
+// "Add your side" when I have not logged yet, a quiet edit link when I have
+function MySideButton({
+  experiences,
+  currentUserId,
+  onTellStory,
+  t,
+  tone,
+}: {
+  experiences: ExperienceWithUser[]
+  currentUserId: string
+  onTellStory: () => void
+  t: Translations
+  tone: 'accent' | 'surprise'
+}) {
+  const logged = experiences.some((e) => e.logged_by === currentUserId)
+  const color = tone === 'accent' ? 'var(--color-accent-dark)' : 'var(--color-surprise-dark)'
+  if (logged) {
+    return (
+      <button
+        type="button"
+        onClick={onTellStory}
+        className="tf-press text-[12px] font-semibold text-text-muted underline underline-offset-2"
+      >
+        {t.editYourSide}
+      </button>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={onTellStory}
+      className="tf-press text-[12px] font-bold px-3.5 py-1.5 rounded-full bg-card"
+      style={{ color, boxShadow: '0 1px 6px rgba(0, 0, 0, 0.06)' }}
+    >
+      {t.addYourSide}
+    </button>
+  )
 }
 
 // === Common header (icon + title + time) ===
@@ -158,13 +222,8 @@ function PlanBox({
 }
 
 // === Card 1: Experienced ===
-function ExperiencedCard({
-  activity,
-  t,
-}: {
-  activity: ActivityWithExperiences
-  t: Translations
-}) {
+function ExperiencedCard({ activity, t, currentUserId, onTellStory }: CardProps) {
+  const divergentName = divergentMember(activity.experiences, currentUserId)
   const verdict = aggregateVerdict(activity.experiences)
   // planned_cost is per person, so compare it with the average of logged costs
   // (a missing cost means "not logged", never "free")
@@ -224,6 +283,12 @@ function ExperiencedCard({
             ))}
           </div>
 
+          {divergentName && (
+            <p className="mt-2.5 text-[12px] font-semibold text-accent-dark italic">
+              ↔ {t.divergence(divergentName)}
+            </p>
+          )}
+
           <div
             className="mt-3 pt-2.5 flex items-center justify-between gap-3"
             style={{ borderTop: '1px dashed rgba(61, 158, 142, 0.3)' }}
@@ -240,6 +305,16 @@ function ExperiencedCard({
           </div>
         </div>
       </motion.div>
+
+      <div className="mt-2.5 flex justify-end">
+        <MySideButton
+          experiences={activity.experiences}
+          currentUserId={currentUserId}
+          onTellStory={onTellStory}
+          t={t}
+          tone="accent"
+        />
+      </div>
     </article>
   )
 }
@@ -273,13 +348,7 @@ function ExperienceLine({
 }
 
 // === Card 2: Plan-only ===
-function PlanOnlyCard({
-  activity,
-  t,
-}: {
-  activity: ActivityWithExperiences
-  t: Translations
-}) {
+function PlanOnlyCard({ activity, t, onTellStory }: CardProps) {
   return (
     <article className="tf-card p-4">
       <CardHeader activity={activity} t={t} />
@@ -301,6 +370,7 @@ function PlanOnlyCard({
         </p>
         <button
           type="button"
+          onClick={onTellStory}
           className="tf-press mt-3 px-6 py-2.5 rounded-[14px] text-[13px] font-bold text-white bg-accent"
           style={{ boxShadow: '0 2px 10px rgba(91, 191, 173, 0.3)' }}
         >
@@ -312,13 +382,7 @@ function PlanOnlyCard({
 }
 
 // === Card 3.5: Ghost (planned, day passed, never logged) ===
-function GhostCard({
-  activity,
-  t,
-}: {
-  activity: ActivityWithExperiences
-  t: Translations
-}) {
+function GhostCard({ activity, t, onTellStory }: CardProps) {
   return (
     <article
       className="rounded-[20px] p-4"
@@ -353,6 +417,7 @@ function GhostCard({
         </p>
         <button
           type="button"
+          onClick={onTellStory}
           className="tf-press shrink-0 text-[12px] font-bold text-text-body px-3.5 py-2 rounded-full bg-card"
           style={{ border: '1px dashed #cfc9c0' }}
         >
@@ -364,13 +429,7 @@ function GhostCard({
 }
 
 // === Card 3: Unplanned ===
-function UnplannedCard({
-  activity,
-  t,
-}: {
-  activity: ActivityWithExperiences
-  t: Translations
-}) {
+function UnplannedCard({ activity, t, currentUserId, onTellStory }: CardProps) {
   const { emoji } = categorize(activity.title)
 
   return (
@@ -402,6 +461,16 @@ function UnplannedCard({
       {activity.experiences.map((exp) => (
         <UnplannedVoice key={exp.id} experience={exp} t={t} />
       ))}
+
+      <div className="mt-3 flex justify-end">
+        <MySideButton
+          experiences={activity.experiences}
+          currentUserId={currentUserId}
+          onTellStory={onTellStory}
+          t={t}
+          tone="surprise"
+        />
+      </div>
     </article>
   )
 }

@@ -1,317 +1,16 @@
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ActivityCard } from '@/components/activity/ActivityCard'
 import { userColor } from '@/lib/userColor'
 import { DaySelector } from '@/components/activity/DaySelector'
 import { useTripUIStore } from '@/store/trip'
 import { useT } from '@/lib/i18n'
-import type { ActivityWithExperiences, User } from '@/types'
-
-// Temporary mock data — remove once Supabase fetch is wired up
-const alex: User = {
-  id: 'u1',
-  email: 'alex@example.com',
-  name: 'Alex',
-  avatar_url: null,
-  created_at: '',
-}
-const zeynep: User = {
-  id: 'u2',
-  email: 'zeynep@example.com',
-  name: 'Zeynep',
-  avatar_url: null,
-  created_at: '',
-}
-const mike: User = {
-  id: 'u3',
-  email: 'mike@example.com',
-  name: 'Mike',
-  avatar_url: null,
-  created_at: '',
-}
-
-const mockTrip = {
-  name: 'Paris, May 2026',
-  start_date: '2026-05-16',
-  day_count: 3,
-  country: 'France',
-  flag: '🇫🇷',
-  emoji: '🗼',
-}
-
-const mockActivities: ActivityWithExperiences[] = [
-  // === Day 1 — lived, multi-voice ===
-  {
-    id: 'a1',
-    trip_id: 't1',
-    day_index: 0,
-    title: 'Café de Flore breakfast',
-    planned_time: '09:00',
-    planned_cost: 25,
-    planned_note: 'Famous for the croissants.',
-    created_by: 'u2',
-    created_at: '',
-    state: 'experienced',
-    created_by_user: zeynep,
-    experiences: [
-      {
-        id: 'e1a',
-        activity_id: 'a1',
-        note: 'The croissants were unbelievable. Worth every euro.',
-        actual_cost: 32,
-        verdict: 'more',
-        logged_by: 'u2',
-        logged_at: '',
-        user: zeynep,
-      },
-      {
-        id: 'e1b',
-        activity_id: 'a1',
-        note: 'Croissants good, coffee average. Service was slow.',
-        actual_cost: 30,
-        verdict: 'same',
-        logged_by: 'u1',
-        logged_at: '',
-        user: alex,
-      },
-    ],
-  },
-  {
-    id: 'a2',
-    trip_id: 't1',
-    day_index: 0,
-    title: 'Louvre Museum',
-    planned_time: '11:30',
-    planned_cost: 22,
-    planned_note: 'Mona Lisa, obviously.',
-    created_by: 'u2',
-    created_at: '',
-    state: 'experienced',
-    created_by_user: zeynep,
-    experiences: [
-      {
-        id: 'e2a',
-        activity_id: 'a2',
-        note: 'Three hours in and we had seen maybe 10%. The crowd around Mona Lisa was its own art piece.',
-        actual_cost: 22,
-        verdict: 'same',
-        logged_by: 'u1',
-        logged_at: '',
-        user: alex,
-      },
-      {
-        id: 'e2b',
-        activity_id: 'a2',
-        note: 'Beautiful pieces but exhausting. I gave up by the Egyptian wing.',
-        actual_cost: 22,
-        verdict: 'less',
-        logged_by: 'u2',
-        logged_at: '',
-        user: zeynep,
-      },
-      {
-        id: 'e2c',
-        activity_id: 'a2',
-        note: 'Could have spent a whole day here. The Italian rooms are stunning.',
-        actual_cost: 22,
-        verdict: 'more',
-        logged_by: 'u3',
-        logged_at: '',
-        user: mike,
-      },
-    ],
-  },
-  {
-    id: 'a3',
-    trip_id: 't1',
-    day_index: 0,
-    title: 'Crepe stand near the river',
-    planned_time: null,
-    planned_cost: null,
-    planned_note: null,
-    created_by: 'u1',
-    created_at: '',
-    state: 'unplanned',
-    created_by_user: alex,
-    experiences: [
-      {
-        id: 'e3a',
-        activity_id: 'a3',
-        note: 'Stumbled on this on the way back. Best crepe of the trip.',
-        actual_cost: 8,
-        verdict: 'more',
-        logged_by: 'u1',
-        logged_at: '',
-        user: alex,
-      },
-      {
-        id: 'e3b',
-        activity_id: 'a3',
-        note: 'Followed Alex. Worth the detour.',
-        actual_cost: 7,
-        verdict: 'more',
-        logged_by: 'u3',
-        logged_at: '',
-        user: mike,
-      },
-    ],
-  },
-  {
-    id: 'a4',
-    trip_id: 't1',
-    day_index: 0,
-    title: 'Eiffel Tower at sunset',
-    planned_time: '18:00',
-    planned_cost: 30,
-    planned_note: 'Hopefully not too crowded.',
-    created_by: 'u1',
-    created_at: '',
-    state: 'experienced',
-    created_by_user: alex,
-    experiences: [
-      {
-        id: 'e4a',
-        activity_id: 'a4',
-        note: 'The line took an hour but the city at dusk was worth it. Colder up there than we expected.',
-        actual_cost: 35,
-        verdict: 'more',
-        logged_by: 'u2',
-        logged_at: '',
-        user: zeynep,
-      },
-      {
-        id: 'e4b',
-        activity_id: 'a4',
-        note: 'Beautiful but predictable. I knew what to expect.',
-        actual_cost: 32,
-        verdict: 'same',
-        logged_by: 'u1',
-        logged_at: '',
-        user: alex,
-      },
-      {
-        id: 'e4c',
-        activity_id: 'a4',
-        note: 'Cried a little. Do not tell anyone.',
-        actual_cost: 32,
-        verdict: 'more',
-        logged_by: 'u3',
-        logged_at: '',
-        user: mike,
-      },
-    ],
-  },
-  {
-    id: 'a5',
-    trip_id: 't1',
-    day_index: 0,
-    title: 'Late-night jazz club',
-    planned_time: null,
-    planned_cost: null,
-    planned_note: null,
-    created_by: 'u2',
-    created_at: '',
-    state: 'unplanned',
-    created_by_user: zeynep,
-    experiences: [
-      {
-        id: 'e5a',
-        activity_id: 'a5',
-        note: 'Walked past, heard the bass, walked in. Stayed until 1am.',
-        actual_cost: 18,
-        verdict: 'more',
-        logged_by: 'u2',
-        logged_at: '',
-        user: zeynep,
-      },
-    ],
-  },
-
-  // === Day 2 — mix ===
-  {
-    id: 'a6',
-    trip_id: 't1',
-    day_index: 1,
-    title: 'Versailles day trip',
-    planned_time: '10:00',
-    planned_cost: 45,
-    planned_note: 'RER C to Versailles-Château.',
-    created_by: 'u2',
-    created_at: '',
-    state: 'experienced',
-    created_by_user: zeynep,
-    experiences: [
-      {
-        id: 'e6a',
-        activity_id: 'a6',
-        note: 'The gardens went on forever. Skipped half the palace to stay outside.',
-        actual_cost: 50,
-        verdict: 'same',
-        logged_by: 'u1',
-        logged_at: '',
-        user: alex,
-      },
-      {
-        id: 'e6b',
-        activity_id: 'a6',
-        note: 'I want to come back in summer when everything is in bloom.',
-        actual_cost: 48,
-        verdict: 'more',
-        logged_by: 'u2',
-        logged_at: '',
-        user: zeynep,
-      },
-    ],
-  },
-  {
-    id: 'a7',
-    trip_id: 't1',
-    day_index: 1,
-    title: 'Picnic at Trocadéro',
-    planned_time: '19:30',
-    planned_cost: 15,
-    planned_note: 'Cheese, bread, the tower lit up at dusk.',
-    created_by: 'u1',
-    created_at: '',
-    state: 'ghost',
-    experiences: [],
-    created_by_user: alex,
-  },
-
-  // === Day 3 — all plan-only, best place to see ghosts under reflecting ===
-  {
-    id: 'a8',
-    trip_id: 't1',
-    day_index: 2,
-    title: 'Montmartre wander',
-    planned_time: '11:00',
-    planned_cost: null,
-    planned_note: 'No itinerary. Just walk.',
-    created_by: 'u2',
-    created_at: '',
-    state: 'plan-only',
-    experiences: [],
-    created_by_user: zeynep,
-  },
-  {
-    id: 'a9',
-    trip_id: 't1',
-    day_index: 2,
-    title: 'Sacré-Cœur at sunset',
-    planned_time: '20:00',
-    planned_cost: null,
-    planned_note: 'Bring a jacket.',
-    created_by: 'u1',
-    created_at: '',
-    state: 'plan-only',
-    experiences: [],
-    created_by_user: alex,
-  },
-]
-
-const tripMembers: User[] = [alex, zeynep, mike]
-// Demo: the trip is viewed as Zeynep
-const currentUser = zeynep
+import { AddMomentSheet } from '@/components/sheets/AddMomentSheet'
+import { StorySheet } from '@/components/sheets/StorySheet'
+import { buildTripActivities, useDataStore, type LocalTrip } from '@/store/data'
+import { daysBetween, parseLocalDate, startOfToday, todayIndex, tripPhase } from '@/lib/dates'
+import type { ActivityWithExperiences } from '@/types'
 
 function sortByPlannedTime(
   activities: ActivityWithExperiences[],
@@ -325,22 +24,83 @@ function sortByPlannedTime(
 }
 
 export function TripDetail() {
-  const selectedDayIndex = useTripUIStore((s) => s.selectedDayIndex)
+  const { tripId } = useParams()
+  const trip = useDataStore((s) => s.trips.find((tr) => tr.id === tripId))
+  const t = useT()
+
+  if (!trip) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center min-h-dvh">
+        <span className="text-[44px]">🧭</span>
+        <p className="text-[14px] text-text-muted mt-3">{t.tripNotFound}</p>
+        <Link
+          to="/"
+          className="tf-press mt-5 px-5 py-2.5 rounded-[24px] bg-accent text-white text-[13px] font-bold"
+        >
+          {t.backHome}
+        </Link>
+      </div>
+    )
+  }
+  return <TripView key={trip.id} trip={trip} />
+}
+
+function TripView({ trip }: { trip: LocalTrip }) {
   const t = useT()
   const navigate = useNavigate()
+  const users = useDataStore((s) => s.users)
+  const allActivities = useDataStore((s) => s.activities)
+  const experiences = useDataStore((s) => s.experiences)
+  const currentUserId = useDataStore((s) => s.currentUserId)
+  const deleteTrip = useDataStore((s) => s.deleteTrip)
+  const storedDayIndex = useTripUIStore((s) => s.selectedDayIndex)
+  const setSelectedDayIndex = useTripUIStore((s) => s.setSelectedDayIndex)
+
+  const [today] = useState(startOfToday)
+  const [addOpen, setAddOpen] = useState(false)
+  const [storyFor, setStoryFor] = useState<ActivityWithExperiences | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // Open a trip on today's page (or its first/last day outside the trip)
+  useEffect(() => {
+    setSelectedDayIndex(todayIndex(trip.start_date, trip.day_count, today))
+  }, [trip.start_date, trip.day_count, today, setSelectedDayIndex])
+  const selectedDayIndex = Math.min(storedDayIndex, trip.day_count - 1)
+
+  const activities = useMemo(
+    () => buildTripActivities(trip, allActivities, experiences, users, today),
+    [trip, allActivities, experiences, users, today],
+  )
+  const tripMembers = useMemo(
+    () => trip.member_ids.flatMap((id) => users.filter((u) => u.id === id)),
+    [trip.member_ids, users],
+  )
+  const currentUser = users.find((u) => u.id === currentUserId)
 
   const dayActivities = sortByPlannedTime(
-    mockActivities.filter((a) => a.day_index === selectedDayIndex),
+    activities.filter((a) => a.day_index === selectedDayIndex),
   )
 
   // Unplanned moments were lived too; ghosts are still waiting for their story
-  const lived = mockActivities.filter(
+  const lived = activities.filter(
     (a) => a.state === 'experienced' || a.state === 'unplanned',
   ).length
-  const awaiting = mockActivities.filter(
+  const awaiting = activities.filter(
     (a) => a.state === 'plan-only' || a.state === 'ghost',
   ).length
-  const soulsLabel = t.daysSouls(mockTrip.day_count, tripMembers.length)
+  const soulsLabel = t.daysSouls(trip.day_count, tripMembers.length)
+  const phase = tripPhase(trip.start_date, trip.day_count, today)
+  const phaseLabel =
+    phase === 'active'
+      ? t.live
+      : phase === 'planning'
+        ? t.startsIn(daysBetween(today, parseLocalDate(trip.start_date)))
+        : t.phaseReflecting
+
+  // keep the open story sheet in sync with the latest data
+  const storyActivity = storyFor
+    ? (activities.find((a) => a.id === storyFor.id) ?? null)
+    : null
 
   return (
     <div className="flex-1 flex flex-col min-h-dvh pb-24">
@@ -358,7 +118,7 @@ export function TripDetail() {
 
           <p className="text-[16px] font-bold text-text-primary">
             {t.helloPrefix}
-            <span className="text-accent">{currentUser.name}</span> 👋
+            <span className="text-accent">{currentUser?.name}</span> 👋
           </p>
 
           <div className="flex -space-x-2">
@@ -386,12 +146,12 @@ export function TripDetail() {
               boxShadow: '0 4px 24px rgba(91, 191, 173, 0.2)',
             }}
           >
-            <span className="tf-anim-bounce">{mockTrip.emoji}</span>
+            <span className="tf-anim-bounce">{trip.emoji}</span>
             <span
               className="absolute -bottom-2 bg-card rounded-[20px] px-4 py-1.5 text-[13px] font-bold whitespace-nowrap"
               style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}
             >
-              {mockTrip.name}
+              {trip.name}
             </span>
           </div>
         </div>
@@ -402,12 +162,14 @@ export function TripDetail() {
             🌍 {soulsLabel}
           </span>
           <div className="flex items-center gap-2 text-[12px] font-semibold">
-            <span className="inline-flex items-center gap-1.5 text-accent-dark">
+            <span
+              className={`inline-flex items-center gap-1.5 ${phase === 'active' ? 'text-accent-dark' : 'text-text-body'}`}
+            >
               <span
-                className="w-[6px] h-[6px] rounded-full bg-accent tf-anim-dot-pulse"
+                className={`w-[6px] h-[6px] rounded-full ${phase === 'active' ? 'bg-accent tf-anim-dot-pulse' : 'bg-text-muted'}`}
                 aria-hidden
               />
-              {t.live}
+              {phaseLabel}
             </span>
             <span className="text-text-muted">·</span>
             <span className="text-text-muted">{t.livedAwaiting(lived, awaiting)}</span>
@@ -417,8 +179,8 @@ export function TripDetail() {
 
       {/* DAY SELECTOR */}
       <DaySelector
-        startDate={mockTrip.start_date}
-        dayCount={mockTrip.day_count}
+        startDate={trip.start_date}
+        dayCount={trip.day_count}
       />
 
       {/* ACTIVITY LIST */}
@@ -442,16 +204,52 @@ export function TripDetail() {
                   ease: [0.4, 0, 0.2, 1],
                 }}
               >
-                <ActivityCard activity={activity} />
+                <ActivityCard
+                  activity={activity}
+                  currentUserId={currentUserId}
+                  onTellStory={setStoryFor}
+                />
               </motion.div>
             ))}
           </AnimatePresence>
         )}
       </div>
 
+      {/* delete trip: two taps, no browser dialog */}
+      <div className="flex justify-center pt-10 pb-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (!confirmingDelete) {
+              setConfirmingDelete(true)
+              window.setTimeout(() => setConfirmingDelete(false), 3000)
+              return
+            }
+            deleteTrip(trip.id)
+            navigate('/')
+          }}
+          className="tf-press text-[12px] font-semibold px-4 py-2 rounded-full"
+          style={{
+            color: confirmingDelete ? '#ffffff' : 'var(--color-text-muted)',
+            background: confirmingDelete ? 'var(--color-danger)' : 'transparent',
+          }}
+        >
+          {confirmingDelete ? t.confirmDelete : t.deleteTrip}
+        </button>
+      </div>
+
+      <AddMomentSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        trip={trip}
+        dayIndex={selectedDayIndex}
+      />
+      <StorySheet activity={storyActivity} onClose={() => setStoryFor(null)} />
+
       {/* FAB */}
       <button
         type="button"
+        onClick={() => setAddOpen(true)}
         aria-label={t.addMomentToDay(selectedDayIndex + 1)}
         title={t.addMomentToDay(selectedDayIndex + 1)}
         className="tf-press fixed z-20 w-[52px] h-[52px] rounded-full bg-accent text-white text-[28px] font-light flex items-center justify-center"

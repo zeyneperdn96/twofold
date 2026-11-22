@@ -45,6 +45,47 @@ export interface Translations {
   ghostCard: string
   logExperience: string
   addActivity: string
+
+  // Trip phases + home
+  phasePlanning: string
+  phaseReflecting: string
+  startsIn: (days: number) => string
+  noTrips: string
+  resetDemo: string
+  deleteTrip: string
+  confirmDelete: string
+  tripNotFound: string
+  backHome: string
+
+  // Two sides
+  addYourSide: string
+  editYourSide: string
+  divergence: (name: string) => string
+
+  // Sheets
+  cancel: string
+  optional: string
+  newTripTitle: string
+  tripName: string
+  tripNamePlaceholder: string
+  firstDay: string
+  dayCount: string
+  whoIsComing: string
+  companionsHint: string
+  createTrip: string
+  modePlan: string
+  modeSurprise: string
+  momentTitle: string
+  momentPlaceholder: string
+  surprisePlaceholder: string
+  time: string
+  costPerPerson: string
+  hopeNotePlaceholder: string
+  addToDay: (day: number) => string
+  experiencePrompt: string
+  yourCost: string
+  comparedToHope: string
+  saveMySide: string
 }
 
 const en: Translations = {
@@ -77,6 +118,44 @@ const en: Translations = {
   ghostCard: 'You planned this. Did it happen?',
   logExperience: 'How did it actually go?',
   addActivity: 'What are you hoping for?',
+
+  phasePlanning: 'Upcoming',
+  phaseReflecting: 'Memories',
+  startsIn: (n) => (n === 1 ? 'Starts tomorrow' : `Starts in ${n} days`),
+  noTrips: 'No trips yet. Where to first?',
+  resetDemo: 'Reset demo',
+  deleteTrip: 'Delete trip',
+  confirmDelete: 'Tap again to delete',
+  tripNotFound: 'This trip does not exist anymore.',
+  backHome: '‹ All trips',
+
+  addYourSide: 'Add your side →',
+  editYourSide: 'Edit your side',
+  divergence: (name) => `You and ${name} saw this one differently.`,
+
+  cancel: 'Cancel',
+  optional: 'optional',
+  newTripTitle: 'Where are we going?',
+  tripName: 'Trip name',
+  tripNamePlaceholder: 'Lisbon in spring',
+  firstDay: 'First day',
+  dayCount: 'Days',
+  whoIsComing: 'Who is coming?',
+  companionsHint: 'Names, separated by commas',
+  createTrip: 'Create trip',
+  modePlan: '💭 Planning it',
+  modeSurprise: '✦ It just happened',
+  momentTitle: 'What',
+  momentPlaceholder: 'Sunset at the old harbour',
+  surprisePlaceholder: 'Tiny bakery we walked into',
+  time: 'Time',
+  costPerPerson: 'Cost per person (€)',
+  hopeNotePlaceholder: 'Why it is on the list',
+  addToDay: (n) => `Add to Day ${n}`,
+  experiencePrompt: 'One sentence. How did it go?',
+  yourCost: 'What did it cost you? (€)',
+  comparedToHope: 'Compared to what you hoped',
+  saveMySide: 'Save my side',
 }
 
 const es: Translations = {
@@ -109,6 +188,44 @@ const es: Translations = {
   ghostCard: 'Lo planeaste. ¿Pasó?',
   logExperience: '¿Cómo fue de verdad?',
   addActivity: '¿Qué esperas?',
+
+  phasePlanning: 'Próximo',
+  phaseReflecting: 'Recuerdos',
+  startsIn: (n) => (n === 1 ? 'Empieza mañana' : `Empieza en ${n} días`),
+  noTrips: 'Aún no hay viajes. ¿Adónde primero?',
+  resetDemo: 'Reiniciar demo',
+  deleteTrip: 'Eliminar viaje',
+  confirmDelete: 'Toca otra vez para eliminar',
+  tripNotFound: 'Este viaje ya no existe.',
+  backHome: '‹ Todos los viajes',
+
+  addYourSide: 'Añade tu versión →',
+  editYourSide: 'Editar tu versión',
+  divergence: (name) => `Tú y ${name} lo vivieron distinto.`,
+
+  cancel: 'Cancelar',
+  optional: 'opcional',
+  newTripTitle: '¿Adónde vamos?',
+  tripName: 'Nombre del viaje',
+  tripNamePlaceholder: 'Lisboa en primavera',
+  firstDay: 'Primer día',
+  dayCount: 'Días',
+  whoIsComing: '¿Quién viene?',
+  companionsHint: 'Nombres, separados por comas',
+  createTrip: 'Crear viaje',
+  modePlan: '💭 Lo planeamos',
+  modeSurprise: '✦ Simplemente pasó',
+  momentTitle: 'Qué',
+  momentPlaceholder: 'Atardecer en el puerto viejo',
+  surprisePlaceholder: 'Una panadería diminuta',
+  time: 'Hora',
+  costPerPerson: 'Coste por persona (€)',
+  hopeNotePlaceholder: 'Por qué está en la lista',
+  addToDay: (n) => `Añadir al Día ${n}`,
+  experiencePrompt: 'Una frase. ¿Cómo fue?',
+  yourCost: '¿Cuánto te costó? (€)',
+  comparedToHope: 'Comparado con lo que esperabas',
+  saveMySide: 'Guardar mi versión',
 }
 
 const tr: Translations = {
@@ -141,6 +258,44 @@ const tr: Translations = {
   ghostCard: 'Bunu planlamıştın. Oldu mu?',
   logExperience: 'Aslında nasıl geçti?',
   addActivity: 'Ne umuyorsun?',
+
+  phasePlanning: 'Yaklaşıyor',
+  phaseReflecting: 'Anılar',
+  startsIn: (n) => (n === 1 ? 'Yarın başlıyor' : `${n} gün sonra başlıyor`),
+  noTrips: 'Henüz seyahat yok. İlk durak neresi?',
+  resetDemo: 'Demoyu sıfırla',
+  deleteTrip: 'Seyahati sil',
+  confirmDelete: 'Silmek için tekrar dokun',
+  tripNotFound: 'Bu seyahat artık yok.',
+  backHome: '‹ Tüm seyahatler',
+
+  addYourSide: 'Senin tarafını ekle →',
+  editYourSide: 'Tarafını düzenle',
+  divergence: (name) => `Sen ve ${name} bunu farklı yaşadınız.`,
+
+  cancel: 'Vazgeç',
+  optional: 'isteğe bağlı',
+  newTripTitle: 'Nereye gidiyoruz?',
+  tripName: 'Seyahat adı',
+  tripNamePlaceholder: 'İlkbaharda Lizbon',
+  firstDay: 'İlk gün',
+  dayCount: 'Gün',
+  whoIsComing: 'Kimler geliyor?',
+  companionsHint: 'İsimler, virgülle ayrılmış',
+  createTrip: 'Seyahati oluştur',
+  modePlan: '💭 Planlıyoruz',
+  modeSurprise: '✦ Kendiliğinden oldu',
+  momentTitle: 'Ne',
+  momentPlaceholder: 'Eski limanda gün batımı',
+  surprisePlaceholder: 'Girdiğimiz minik fırın',
+  time: 'Saat',
+  costPerPerson: 'Kişi başı tutar (€)',
+  hopeNotePlaceholder: 'Neden listede',
+  addToDay: (n) => `${n}. güne ekle`,
+  experiencePrompt: 'Tek cümle. Nasıl geçti?',
+  yourCost: 'Sana kaça patladı? (€)',
+  comparedToHope: 'Umduğuna göre',
+  saveMySide: 'Tarafımı kaydet',
 }
 
 const DICTIONARIES: Record<Locale, Translations> = { en, es, tr }
